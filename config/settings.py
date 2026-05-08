@@ -94,8 +94,8 @@ PAYMENT_CONFIG = {
 FEATURED_PRODUCT_ID = None
 
 # ─── Security ──────────────────────────────────────────────────
-SECRET_KEY = os.environ.get('SECRET_KEY', 'your-default-key')
-DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-change-me-in-production')
+DEBUG = True
 ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
