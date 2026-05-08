@@ -83,3 +83,4 @@ Sizes Available, Hallmark, Customizable flag, New Arrival flag.
 | `/dashboard/product/add/` | Add product |
 | `/orders/` | Customer order history |
 | `/admin/` | Django admin |
+# ecommerce-site
