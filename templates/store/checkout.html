@@ -1,0 +1,288 @@
+{% extends "store/base.html" %}
+{% block title %}Checkout — {{ site.SITE_NAME }}{% endblock %}
+{% block extra_styles %}
+<style>
+  .checkout-page{padding:3rem 0 5rem}
+  .checkout-layout{display:grid;grid-template-columns:1.2fr 400px;gap:3rem;align-items:start}
+  .checkout-card{background:var(--cs);border:1px solid var(--cb);padding:2rem;margin-bottom:1.5rem}
+  .checkout-card h3{font-family:var(--fd);font-size:1.2rem;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid var(--cb)}
+  .payment-options{display:flex;flex-direction:column;gap:.75rem}
+  .payment-option{border:1px solid var(--cb);padding:1rem 1.25rem;cursor:pointer;transition:border-color var(--tr);display:flex;align-items:center;gap:1rem}
+  .payment-option:has(input:checked),.payment-option.selected{border-color:var(--ca);background:rgba(201,168,76,.05)}
+  .payment-option input[type=radio]{accent-color:var(--ca);width:16px;height:16px}
+  .payment-option-label{font-size:.85rem;font-weight:600}
+  .payment-option-desc{font-size:.76rem;color:var(--ctm);margin-top:.1rem}
+  #stripe-section,#paypal-section,#cod-section,#bank-section{display:none;margin-top:1rem;padding:1rem;background:var(--cp);border:1px solid var(--cb)}
+  .order-item{display:flex;gap:1rem;align-items:center;padding:.75rem 0;border-bottom:1px solid var(--cb)}
+  .order-item:last-child{border-bottom:none}
+  .order-item-img{width:56px;height:56px;background:var(--cp);overflow:hidden;flex-shrink:0}
+  .order-item-img img{width:100%;height:100%;object-fit:cover}
+  .summary-row{display:flex;justify-content:space-between;padding:.5rem 0;font-size:.9rem}
+  .summary-total{display:flex;justify-content:space-between;padding:1rem 0 0;border-top:1px solid var(--cb);font-family:var(--fd);font-size:1.3rem;font-weight:600}
+  #paypal-button-container{min-height:50px}
+  @media(max-width:900px){.checkout-layout{grid-template-columns:1fr}}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="checkout-page">
+  <div class="container">
+    <div style="display:flex;align-items:center;gap:1rem;margin-bottom:2.5rem">
+      <a href="{% url 'cart' %}" class="btn btn-ghost btn-sm"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg> Back to Bag</a>
+      <div>
+        <div class="section-label">Almost there</div>
+        <h1 style="font-size:2rem">Checkout</h1>
+      </div>
+    </div>
+
+    <form method="POST" id="checkoutForm">
+      {% csrf_token %}
+      <div class="checkout-layout">
+
+        <!-- Left: Form -->
+        <div>
+          <!-- Contact & Shipping -->
+          <div class="checkout-card">
+            <h3>Delivery Information</h3>
+            <div class="form-row">
+              <div class="form-group"><label class="form-label">Full Name *</label><input type="text" name="full_name" class="form-control" value="{{ form.full_name.value|default:'' }}" required placeholder="As on ID"></div>
+              <div class="form-group"><label class="form-label">Email *</label><input type="email" name="email" class="form-control" value="{{ form.email.value|default:'' }}" required placeholder="Order confirmation sent here"></div>
+            </div>
+            <div class="form-group"><label class="form-label">Phone</label><input type="text" name="phone" class="form-control" value="{{ form.phone.value|default:'' }}" placeholder="+1 (555) 000-0000"></div>
+            <div class="form-group"><label class="form-label">Address Line 1 *</label><input type="text" name="address_line1" class="form-control" value="{{ form.address_line1.value|default:'' }}" required placeholder="Street address"></div>
+            <div class="form-group"><label class="form-label">Address Line 2</label><input type="text" name="address_line2" class="form-control" value="{{ form.address_line2.value|default:'' }}" placeholder="Apt, suite, etc."></div>
+            <div class="form-row">
+              <div class="form-group"><label class="form-label">City *</label><input type="text" name="city" class="form-control" value="{{ form.city.value|default:'' }}" required></div>
+              <div class="form-group"><label class="form-label">State / Province</label><input type="text" name="state" class="form-control" value="{{ form.state.value|default:'' }}"></div>
+            </div>
+            <div class="form-row">
+              <div class="form-group"><label class="form-label">Postal Code *</label><input type="text" name="postal_code" class="form-control" value="{{ form.postal_code.value|default:'' }}" required></div>
+              <div class="form-group"><label class="form-label">Country *</label><input type="text" name="country" class="form-control" value="{{ form.country.value|default:'United States' }}" required></div>
+            </div>
+            <div class="form-group"><label class="form-label">Gift Note (optional)</label><textarea name="gift_note" class="form-control" rows="2" placeholder="Include a personal message with your order">{{ form.gift_note.value|default:'' }}</textarea></div>
+          </div>
+
+          <!-- Payment -->
+          <div class="checkout-card">
+            <h3>Payment Method</h3>
+            <div class="payment-options">
+              {% if pcfg.STRIPE_ENABLED %}
+              <label class="payment-option">
+                <input type="radio" name="payment_method" value="stripe" {% if not pcfg.PAYPAL_ENABLED and not pcfg.COD_ENABLED %}checked{% endif %} onchange="showPayment('stripe')">
+                <div>
+                  <div class="payment-option-label">💳 Credit / Debit Card</div>
+                  <div class="payment-option-desc">Visa, Mastercard, Amex — powered by Stripe</div>
+                </div>
+              </label>
+              {% endif %}
+
+              {% if pcfg.PAYPAL_ENABLED %}
+              <label class="payment-option">
+                <input type="radio" name="payment_method" value="paypal" onchange="showPayment('paypal')">
+                <div>
+                  <div class="payment-option-label">🅿 PayPal</div>
+                  <div class="payment-option-desc">Pay securely with your PayPal account or saved cards</div>
+                </div>
+              </label>
+              {% endif %}
+
+              {% if pcfg.COD_ENABLED %}
+              <label class="payment-option">
+                <input type="radio" name="payment_method" value="cod" onchange="showPayment('cod')">
+                <div>
+                  <div class="payment-option-label">💵 {{ pcfg.COD_LABEL }}</div>
+                  <div class="payment-option-desc">{{ pcfg.COD_NOTE }}</div>
+                </div>
+              </label>
+              {% endif %}
+
+              {% if pcfg.BANK_ENABLED %}
+              <label class="payment-option">
+                <input type="radio" name="payment_method" value="bank" onchange="showPayment('bank')">
+                <div>
+                  <div class="payment-option-label">🏦 Bank Transfer</div>
+                  <div class="payment-option-desc">Transfer directly to our account</div>
+                </div>
+              </label>
+              {% endif %}
+            </div>
+
+            <!-- Stripe card element -->
+            {% if pcfg.STRIPE_ENABLED %}
+            <div id="stripe-section">
+              <div style="font-size:.78rem;color:var(--ctm);margin-bottom:.75rem">Enter your card details below. Secured by Stripe.</div>
+              <div id="card-element" style="padding:.75rem 1rem;border:1px solid var(--cb);background:var(--cp);border-radius:0"></div>
+              <div id="card-errors" style="color:#e05;font-size:.78rem;margin-top:.5rem"></div>
+            </div>
+            {% endif %}
+
+            <!-- PayPal button placeholder -->
+            {% if pcfg.PAYPAL_ENABLED %}
+            <div id="paypal-section">
+              <div style="font-size:.78rem;color:var(--ctm);margin-bottom:.75rem">Click the PayPal button to complete payment.</div>
+              <div id="paypal-button-container"></div>
+              <input type="hidden" id="paypalOrderId" name="paypal_order_id" value="">
+            </div>
+            {% endif %}
+
+            <!-- COD info -->
+            {% if pcfg.COD_ENABLED %}
+            <div id="cod-section">
+              <p style="font-size:.85rem;color:var(--ctm)">{{ pcfg.COD_NOTE }}</p>
+            </div>
+            {% endif %}
+
+            <!-- Bank details -->
+            {% if pcfg.BANK_ENABLED %}
+            <div id="bank-section">
+              <p style="font-size:.85rem;color:var(--ctm);font-family:monospace">{{ pcfg.BANK_DETAILS }}</p>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Right: Order Summary -->
+        <div>
+          <div class="checkout-card" style="position:sticky;top:90px">
+            <h3>Order Summary</h3>
+            {% for item in items %}
+            <div class="order-item">
+              <div class="order-item-img">
+                {% if item.product.primary_image %}<img src="{{ item.product.primary_image.image.url }}" alt="{{ item.product.name }}">
+                {% else %}<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--ctm)">✦</div>{% endif %}
+              </div>
+              <div style="flex:1">
+                <div style="font-size:.85rem;font-weight:600">{{ item.product.name }}</div>
+                {% if item.size %}<div style="font-size:.75rem;color:var(--ctm)">Size: {{ item.size }}</div>{% endif %}
+                <div style="font-size:.75rem;color:var(--ctm)">Qty: {{ item.quantity }}</div>
+              </div>
+              <div style="font-size:.9rem;font-weight:600;color:var(--ca)">${{ item.line_total }}</div>
+            </div>
+            {% endfor %}
+
+            <div class="summary-row"><span>Subtotal</span><span>${{ subtotal }}</span></div>
+            <div class="summary-row">
+              <span>Shipping</span>
+              <span>{% if shipping == 0 %}<span style="color:#6fcf97">Free</span>{% else %}${{ shipping }}{% endif %}</span>
+            </div>
+            <div class="summary-total">
+              <span>Total</span>
+              <span style="color:var(--ca)" id="totalDisplay">${{ total }}</span>
+            </div>
+
+            <button type="submit" id="submitBtn" class="btn btn-primary" style="width:100%;margin-top:1.5rem;justify-content:center">
+              Place Order — ${{ total }}
+            </button>
+            <div style="text-align:center;margin-top:.75rem">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;vertical-align:middle;color:var(--ca)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              <span style="font-size:.72rem;color:var(--ctm)"> SSL encrypted · Secure checkout</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<!-- Stripe JS -->
+{% if pcfg.STRIPE_ENABLED %}
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+const stripePublicKey = "{{ stripe_public_key }}";
+let stripe, cardElement;
+if (stripePublicKey && stripePublicKey !== 'pk_test_REPLACE_WITH_YOUR_STRIPE_PUBLIC_KEY') {
+  stripe = Stripe(stripePublicKey);
+  const elements = stripe.elements();
+  cardElement = elements.create('card', {
+    style: {
+      base: {
+        color: getComputedStyle(document.documentElement).getPropertyValue('--ct') || '#f2ede4',
+        fontFamily: 'Jost, sans-serif',
+        fontSize: '15px',
+        '::placeholder': { color: '#8a8070' }
+      }
+    }
+  });
+  cardElement.mount('#card-element');
+  cardElement.on('change', e => {
+    document.getElementById('card-errors').textContent = e.error ? e.error.message : '';
+  });
+}
+</script>
+{% endif %}
+
+<!-- PayPal JS -->
+{% if pcfg.PAYPAL_ENABLED %}
+<script src="https://www.paypal.com/sdk/js?client-id={{ paypal_client_id }}&currency={{ pcfg.PAYPAL_CURRENCY }}{% if paypal_sandbox %}&buyer-country=US{% endif %}"></script>
+{% endif %}
+
+<script>
+const form = document.getElementById('checkoutForm');
+const submitBtn = document.getElementById('submitBtn');
+
+function showPayment(method) {
+  ['stripe','paypal','cod','bank'].forEach(m => {
+    const el = document.getElementById(m+'-section');
+    if (el) el.style.display = m === method ? 'block' : 'none';
+  });
+  submitBtn.style.display = method === 'paypal' ? 'none' : 'flex';
+}
+
+// Show default on load
+const firstRadio = document.querySelector('input[name=payment_method]');
+if (firstRadio) showPayment(firstRadio.value);
+
+// PayPal buttons
+{% if pcfg.PAYPAL_ENABLED %}
+const ppClientId = "{{ paypal_client_id }}";
+if (ppClientId && ppClientId !== 'REPLACE_WITH_YOUR_PAYPAL_CLIENT_ID' && typeof paypal !== 'undefined') {
+  paypal.Buttons({
+    createOrder: (data, actions) => actions.order.create({
+      purchase_units: [{ amount: { value: '{{ total }}', currency_code: '{{ pcfg.PAYPAL_CURRENCY }}' } }]
+    }),
+    onApprove: async (data, actions) => {
+      const details = await actions.order.capture();
+      // Notify backend
+      await fetch("{% url 'paypal_capture' %}", {
+        method: 'POST',
+        headers: {'Content-Type':'application/json','X-CSRFToken':'{{ csrf_token }}'},
+        body: JSON.stringify({paypal_order_id: details.id, order_pk: null})
+      });
+      // Submit form to save order
+      const inp = document.createElement('input');
+      inp.type='hidden'; inp.name='paypal_order_id'; inp.value=details.id;
+      form.appendChild(inp);
+      form.submit();
+    },
+    onError: err => alert('PayPal error: ' + err)
+  }).render('#paypal-button-container');
+}
+{% endif %}
+
+// Stripe submit handler
+form.addEventListener('submit', async e => {
+  const method = document.querySelector('input[name=payment_method]:checked')?.value;
+  if (method !== 'stripe') return; // let form submit normally
+  {% if pcfg.STRIPE_ENABLED %}
+  if (!stripe || !cardElement) { alert('Stripe not configured. Please set STRIPE_PUBLIC_KEY in settings.py'); return; }
+  e.preventDefault();
+  submitBtn.textContent = 'Processing...';
+  submitBtn.disabled = true;
+  const {token, error} = await stripe.createToken(cardElement);
+  if (error) {
+    document.getElementById('card-errors').textContent = error.message;
+    submitBtn.textContent = 'Place Order';
+    submitBtn.disabled = false;
+  } else {
+    const inp = document.createElement('input');
+    inp.type='hidden'; inp.name='stripeToken'; inp.value=token.id;
+    form.appendChild(inp);
+    form.submit();
+  }
+  {% endif %}
+});
+</script>
+{% endblock %}

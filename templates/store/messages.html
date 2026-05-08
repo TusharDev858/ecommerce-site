@@ -1,0 +1,33 @@
+{% extends "store/base.html" %}
+{% block title %}Messages — {{ site.SITE_NAME }}{% endblock %}
+{% block content %}
+<div style="padding:3rem 0 5rem">
+  <div class="container">
+    <div style="display:flex;align-items:center;gap:1rem;margin-bottom:2rem">
+      <a href="{% url 'dashboard' %}" class="btn btn-ghost btn-sm"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg> Dashboard</a>
+      <div><div class="section-label">Inbox</div><h1 style="font-size:1.8rem">Contact Messages</h1></div>
+    </div>
+    {% if contact_messages %}
+    {% for msg in contact_messages %}
+    <div style="background:var(--cs);border:1px solid var(--cb);padding:1.5rem;margin-bottom:1rem">
+      <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:.5rem;margin-bottom:.75rem">
+        <div>
+          <strong>{{ msg.name }}</strong>
+          <a href="mailto:{{ msg.email }}" style="color:var(--ca);margin-left:.75rem;font-size:.85rem">{{ msg.email }}</a>
+        </div>
+        <span style="font-size:.72rem;color:var(--ctm)">{{ msg.submitted_at|date:"M d, Y H:i" }}</span>
+      </div>
+      <div style="color:var(--ca);font-size:.85rem;font-weight:600;margin-bottom:.5rem">{{ msg.subject }}</div>
+      <div style="color:var(--ctm);font-size:.875rem;line-height:1.7;white-space:pre-line">{{ msg.message }}</div>
+      <div style="margin-top:1rem"><a href="mailto:{{ msg.email }}?subject=Re: {{ msg.subject }}" class="btn btn-outline btn-sm">Reply via Email</a></div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div style="text-align:center;padding:5rem 2rem;color:var(--ctm)">
+      <h3 style="margin-bottom:.5rem;color:var(--ct)">No messages yet</h3>
+      <p>Customer enquiries will appear here.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

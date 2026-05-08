@@ -1,0 +1,302 @@
+{% extends "store/base.html" %}
+{% load static %}
+{% block title %}{{ product.name }} — {{ site.SITE_NAME }}{% endblock %}
+{% block extra_styles %}
+<style>
+  .detail-page{padding:3rem 0 5rem}
+  .breadcrumb{display:flex;align-items:center;gap:.5rem;font-size:.75rem;color:var(--ctm);margin-bottom:2.5rem;letter-spacing:.06em;text-transform:uppercase}
+  .breadcrumb a{color:var(--ca);transition:opacity var(--tr)}
+  .breadcrumb a:hover{opacity:.7}
+  .breadcrumb-sep{color:var(--cb)}
+  .detail-layout{display:grid;grid-template-columns:1fr 1fr;gap:5rem;align-items:start}
+
+  /* Gallery */
+  .gallery-main{aspect-ratio:3/4;overflow:hidden;background:var(--cs);margin-bottom:.75rem}
+  .gallery-main img{width:100%;height:100%;object-fit:cover;transition:opacity .3s}
+  .gallery-thumbs{display:flex;gap:.5rem;flex-wrap:wrap}
+  .gallery-thumb{width:64px;height:64px;overflow:hidden;cursor:pointer;border:1px solid var(--cb);transition:border-color var(--tr);flex-shrink:0}
+  .gallery-thumb.active,.gallery-thumb:hover{border-color:var(--ca)}
+  .gallery-thumb img{width:100%;height:100%;object-fit:cover}
+
+  /* Product info */
+  .product-category-tag{font-size:.7rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--ca);margin-bottom:.75rem}
+  .product-title{font-size:clamp(1.8rem,3vw,2.6rem);margin-bottom:.75rem}
+  .product-tagline{color:var(--ctm);font-size:1rem;line-height:1.8;margin-bottom:2rem}
+  .price-display{display:flex;align-items:baseline;gap:1rem;margin-bottom:.5rem}
+  .price-main{font-family:var(--fd);font-size:2.2rem;font-weight:600;color:var(--ca)}
+  .price-was{font-size:1.1rem;color:var(--ctm);text-decoration:line-through}
+  .save-note{font-size:.82rem;color:#6fcf97;margin-bottom:2rem}
+
+  /* Specs grid */
+  .specs-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--cb);margin-bottom:2rem}
+  .spec-item{padding:.85rem 1rem;border-bottom:1px solid var(--cb);border-right:1px solid var(--cb)}
+  .spec-item:nth-child(even){border-right:none}
+  .spec-item:nth-last-child(-n+2){border-bottom:none}
+  .spec-label{font-size:.65rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ctm);margin-bottom:.2rem}
+  .spec-value{font-size:.9rem;font-weight:500}
+
+  /* Size selector */
+  .size-selector{margin-bottom:2rem}
+  .size-label{font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ctm);margin-bottom:.75rem}
+  .size-options{display:flex;gap:.5rem;flex-wrap:wrap}
+  .size-btn{width:44px;height:44px;border:1px solid var(--cb);background:transparent;color:var(--ct);cursor:pointer;font-family:var(--fb);font-size:.8rem;font-weight:600;transition:all var(--tr);display:flex;align-items:center;justify-content:center}
+  .size-btn:hover,.size-btn.selected{border-color:var(--ca);color:var(--ca);background:rgba(201,168,76,.08)}
+
+  /* Stock */
+  .stock-row{display:flex;align-items:center;gap:.5rem;font-size:.8rem;margin-bottom:1.5rem;padding:.6rem 1rem;border:1px solid}
+  .stock-in{color:#6fcf97;border-color:rgba(111,207,151,.3);background:rgba(111,207,151,.05)}
+  .stock-out{color:#e05;border-color:rgba(204,0,85,.3);background:rgba(204,0,85,.05)}
+
+  /* Action row */
+  .action-row{display:flex;gap:.75rem;margin-bottom:2rem;flex-wrap:wrap}
+
+  /* Accordion */
+  .accordion{border-top:1px solid var(--cb)}
+  .accordion-item{border-bottom:1px solid var(--cb)}
+  .accordion-trigger{width:100%;display:flex;justify-content:space-between;align-items:center;padding:1.1rem 0;background:none;border:none;cursor:pointer;font-family:var(--fb);font-size:.82rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ctm);transition:color var(--tr)}
+  .accordion-trigger:hover{color:var(--ct)}
+  .accordion-trigger.open{color:var(--ca)}
+  .accordion-content{display:none;padding-bottom:1.25rem;font-size:.9rem;color:var(--ctm);line-height:1.8}
+  .accordion-content.open{display:block}
+  .accordion-icon{transition:transform var(--tr);flex-shrink:0}
+  .accordion-trigger.open .accordion-icon{transform:rotate(45deg)}
+
+  /* Admin bar */
+  .admin-bar{background:var(--ca);color:#000;padding:.7rem 1.5rem;display:flex;align-items:center;gap:1rem;font-size:.8rem;font-weight:700;letter-spacing:.05em}
+  .admin-bar a{color:#000;text-decoration:underline}
+
+  /* Related */
+  .related-section{padding:4rem 0;border-top:1px solid var(--cb)}
+
+  @media(max-width:900px){
+    .detail-layout{grid-template-columns:1fr;gap:2rem}
+    .gallery-main{max-height:500px}
+    .specs-grid{grid-template-columns:1fr}
+    .spec-item{border-right:none}
+    .spec-item:nth-last-child(-n+2){border-bottom:1px solid var(--cb)}
+    .spec-item:last-child{border-bottom:none}
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+{% if user.is_superuser %}
+<div class="admin-bar">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+  Admin:
+  <a href="{% url 'product_edit' product.pk %}">Edit Product</a> ·
+  <a href="{% url 'dashboard' %}">Dashboard</a>
+</div>
+{% endif %}
+
+<div class="detail-page">
+  <div class="container">
+    <div class="breadcrumb">
+      <a href="/">Collection</a>
+      <span class="breadcrumb-sep">/</span>
+      {% if product.category %}
+      <a href="/?category={{ product.category.slug }}">{{ product.category.name }}</a>
+      <span class="breadcrumb-sep">/</span>
+      {% endif %}
+      <span style="color:var(--ct)">{{ product.name }}</span>
+    </div>
+
+    <div class="detail-layout">
+      <!-- Gallery -->
+      <div>
+        <div class="gallery-main">
+          {% if product.primary_image %}
+            <img id="mainImg" src="{{ product.primary_image.image.url }}" alt="{{ product.name }}">
+          {% else %}
+            <div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;color:var(--ctm)">
+              <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" opacity=".3"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <em style="font-family:var(--fd)">{{ product.name }}</em>
+            </div>
+          {% endif %}
+        </div>
+        {% if product.images.count > 1 %}
+        <div class="gallery-thumbs">
+          {% for img in product.images.all %}
+          <div class="gallery-thumb {% if forloop.first %}active{% endif %}" onclick="setImg('{{ img.image.url }}', this)">
+            <img src="{{ img.image.url }}" alt="{{ img.alt_text|default:product.name }}">
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Product Info -->
+      <div>
+        {% if product.category %}<div class="product-category-tag">{{ product.category.name }}</div>{% endif %}
+        <h1 class="product-title">{{ product.name }}</h1>
+        {% if product.tagline %}<p class="product-tagline">{{ product.tagline }}</p>{% endif %}
+
+        <div class="price-display">
+          <span class="price-main">${{ product.price }}</span>
+          {% if product.compare_price %}<span class="price-was">${{ product.compare_price }}</span>{% endif %}
+        </div>
+        {% if product.discount_percent %}<div class="save-note">You save {{ product.discount_percent }}% — ${{ product.compare_price|floatformat:2 }}</div>{% endif %}
+
+        <!-- Specs -->
+        <div class="specs-grid">
+          {% if product.metal %}<div class="spec-item"><div class="spec-label">Metal</div><div class="spec-value">{{ product.get_metal_display_label }}</div></div>{% endif %}
+          {% if product.stone %}<div class="spec-item"><div class="spec-label">Stone</div><div class="spec-value">{{ product.get_stone_display_label }}</div></div>{% endif %}
+          {% if product.stone_carat %}<div class="spec-item"><div class="spec-label">Carat Weight</div><div class="spec-value">{{ product.stone_carat }}</div></div>{% endif %}
+          {% if product.weight_grams %}<div class="spec-item"><div class="spec-label">Item Weight</div><div class="spec-value">{{ product.weight_grams }}g</div></div>{% endif %}
+          {% if product.dimensions %}<div class="spec-item"><div class="spec-label">Dimensions</div><div class="spec-value">{{ product.dimensions }}</div></div>{% endif %}
+          {% if product.hallmark %}<div class="spec-item"><div class="spec-label">Hallmark</div><div class="spec-value">{{ product.hallmark }}</div></div>{% endif %}
+          {% if product.sku %}<div class="spec-item"><div class="spec-label">SKU</div><div class="spec-value">{{ product.sku }}</div></div>{% endif %}
+          {% if product.is_customizable %}<div class="spec-item"><div class="spec-label">Custom</div><div class="spec-value" style="color:var(--ca)">Engravable / Resizable</div></div>{% endif %}
+        </div>
+
+        <!-- Size Selector -->
+        {% if product.size_list %}
+        <div class="size-selector">
+          <div class="size-label">Select Size <span id="selectedSize" style="color:var(--ca)"></span></div>
+          <div class="size-options">
+            {% for s in product.size_list %}
+            <button type="button" class="size-btn" onclick="selectSize('{{ s }}', this)">{{ s }}</button>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Stock -->
+        <div class="stock-row {% if product.in_stock %}stock-in{% else %}stock-out{% endif %}">
+          {% if product.in_stock %}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            In Stock — {{ product.stock }} available
+          {% else %}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            Currently Out of Stock
+          {% endif %}
+        </div>
+
+        <!-- Add to cart -->
+        <form action="{% url 'cart_add' product.pk %}" method="POST" id="addToCartForm">
+          {% csrf_token %}
+          <input type="hidden" name="quantity" value="1">
+          <input type="hidden" name="size" id="sizeInput" value="">
+          <input type="hidden" name="next" value="{% url 'cart' %}">
+          <div class="action-row">
+            {% if product.in_stock %}
+            <button type="submit" class="btn btn-primary btn-lg" style="flex:1">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+              Add to Bag
+            </button>
+            {% else %}
+            <button class="btn btn-outline btn-lg" style="flex:1" disabled>Out of Stock</button>
+            {% endif %}
+            <a href="/" class="btn btn-outline btn-lg">Continue Browsing</a>
+          </div>
+        </form>
+
+        <!-- Free shipping note -->
+        <div style="font-size:.78rem;color:var(--ctm);margin-bottom:2rem">
+          {% if product.price >= payment.FREE_SHIPPING_ABOVE %}
+          <span style="color:#6fcf97">✓ Free shipping on this item</span>
+          {% else %}
+          Add ${{ payment.FREE_SHIPPING_ABOVE|floatformat:0 }} to your cart for free shipping
+          {% endif %}
+        </div>
+
+        <!-- Accordion: Description, Materials, Shipping -->
+        <div class="accordion">
+          <div class="accordion-item">
+            <button class="accordion-trigger open" onclick="toggleAcc(this)">
+              Description
+              <svg class="accordion-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+            <div class="accordion-content open">{{ product.description|linebreaksbr }}</div>
+          </div>
+          {% if product.metal or product.stone or product.hallmark %}
+          <div class="accordion-item">
+            <button class="accordion-trigger" onclick="toggleAcc(this)">
+              Materials & Craftsmanship
+              <svg class="accordion-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+            <div class="accordion-content">
+              {% if product.metal %}Metal: {{ product.get_metal_display_label }}<br>{% endif %}
+              {% if product.stone %}Stone: {{ product.get_stone_display_label }}{% if product.stone_carat %} ({{ product.stone_carat }}){% endif %}<br>{% endif %}
+              {% if product.hallmark %}Hallmark: {{ product.hallmark }}<br>{% endif %}
+              {% if product.weight_grams %}Weight: {{ product.weight_grams }}g<br>{% endif %}
+              Each piece is handcrafted and inspected before shipping.
+            </div>
+          </div>
+          {% endif %}
+          <div class="accordion-item">
+            <button class="accordion-trigger" onclick="toggleAcc(this)">
+              Shipping & Returns
+              <svg class="accordion-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+            <div class="accordion-content">
+              Free shipping on orders over ${{ payment.FREE_SHIPPING_ABOVE|floatformat:0 }}.<br>
+              Standard delivery: 3–5 business days.<br>
+              Express available at checkout.<br><br>
+              Returns accepted within 30 days of delivery. Items must be unworn and in original packaging.
+              Lifetime resize included on all ring purchases.
+            </div>
+          </div>
+          {% if product.is_customizable %}
+          <div class="accordion-item">
+            <button class="accordion-trigger" onclick="toggleAcc(this)">
+              Custom Engraving
+              <svg class="accordion-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+            <div class="accordion-content">
+              This piece can be engraved with a personal message (up to 20 characters). Contact us after placing your order at <a href="mailto:{{ site.CONTACT_EMAIL }}" style="color:var(--ca)">{{ site.CONTACT_EMAIL }}</a> with your engraving text and order number.
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if related %}
+<section class="related-section">
+  <div class="container">
+    <div class="section-label">You May Also Love</div>
+    <h2 style="margin-bottom:2rem">Related Pieces</h2>
+    <div class="product-grid">
+      {% for p in related %}
+      <a href="{% url 'product_detail' p.slug %}" class="card product-card" style="text-decoration:none;color:inherit">
+        <div class="product-card-img">
+          {% if p.primary_image %}<img src="{{ p.primary_image.image.url }}" alt="{{ p.name }}" loading="lazy">
+          {% else %}<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--ctm)">✦</div>{% endif %}
+        </div>
+        <div class="product-card-body">
+          {% if p.metal %}<div class="product-meta">{{ p.get_metal_display_label }}</div>{% endif %}
+          <div class="product-name">{{ p.name }}</div>
+          <div class="product-price"><span class="price-current">${{ p.price }}</span>{% if p.compare_price %}<span class="price-compare">${{ p.compare_price }}</span>{% endif %}</div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function setImg(url, thumb) {
+  document.getElementById('mainImg').src = url;
+  document.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active'));
+  thumb.classList.add('active');
+}
+function selectSize(size, btn) {
+  document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  document.getElementById('sizeInput').value = size;
+  document.getElementById('selectedSize').textContent = '— ' + size;
+}
+function toggleAcc(trigger) {
+  const content = trigger.nextElementSibling;
+  const isOpen = trigger.classList.contains('open');
+  trigger.classList.toggle('open', !isOpen);
+  content.classList.toggle('open', !isOpen);
+}
+</script>
+{% endblock %}

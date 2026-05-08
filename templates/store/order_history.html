@@ -1,0 +1,78 @@
+{% extends "store/base.html" %}
+{% block title %}My Orders — {{ site.SITE_NAME }}{% endblock %}
+{% block extra_styles %}
+<style>
+  .orders-page{padding:3rem 0 5rem;min-height:60vh}
+  .order-card{background:var(--cs);border:1px solid var(--cb);padding:1.5rem;margin-bottom:1rem}
+  .order-card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem;flex-wrap:wrap;gap:.75rem}
+  .order-num{font-family:var(--fd);font-size:1.1rem;color:var(--ca)}
+  .pill{display:inline-block;padding:.2rem .65rem;font-size:.65rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+  .pill-confirmed,.pill-delivered{background:rgba(111,207,151,.15);color:#6fcf97}
+  .pill-pending{background:rgba(201,168,76,.12);color:var(--ca)}
+  .pill-shipped{background:rgba(86,182,247,.12);color:#56b6f7}
+  .pill-processing{background:rgba(201,168,76,.1);color:var(--ca)}
+  .pill-cancelled,.pill-refunded{background:rgba(204,0,85,.1);color:#e05}
+  .order-items-row{display:flex;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap}
+  .order-thumb{width:52px;height:52px;object-fit:cover;border:1px solid var(--cb)}
+  .order-thumb-ph{width:52px;height:52px;background:var(--cp);border:1px solid var(--cb);display:flex;align-items:center;justify-content:center;color:var(--ctm);font-size:.8rem}
+  .order-meta{display:flex;gap:2rem;font-size:.82rem;color:var(--ctm);flex-wrap:wrap}
+</style>
+{% endblock %}
+{% block content %}
+<div class="orders-page">
+  <div class="container" style="max-width:800px">
+    <div style="margin-bottom:2.5rem">
+      <div class="section-label">Account</div>
+      <h1>My Orders</h1>
+    </div>
+
+    {% if orders %}
+    {% for order in orders %}
+    <div class="order-card">
+      <div class="order-card-header">
+        <div>
+          <div class="order-num">{{ order.order_number }}</div>
+          <div style="font-size:.75rem;color:var(--ctm);margin-top:.2rem">{{ order.created_at|date:"F d, Y" }}</div>
+        </div>
+        <div style="text-align:right">
+          <span class="pill pill-{{ order.status }}">{{ order.get_status_display }}</span>
+          <div style="font-family:var(--fd);font-size:1.2rem;font-weight:600;color:var(--ca);margin-top:.3rem">${{ order.total }}</div>
+        </div>
+      </div>
+
+      <div class="order-items-row">
+        {% for item in order.items.all %}
+          {% if item.product and item.product.primary_image %}
+          <img class="order-thumb" src="{{ item.product.primary_image.image.url }}" alt="{{ item.product_name }}" title="{{ item.product_name }}">
+          {% else %}
+          <div class="order-thumb-ph" title="{{ item.product_name }}">✦</div>
+          {% endif %}
+        {% endfor %}
+      </div>
+
+      <div class="order-meta">
+        <span>{{ order.items.count }} item{{ order.items.count|pluralize }}</span>
+        <span>{{ order.get_payment_method_display }}</span>
+        {% if order.is_paid %}<span style="color:#6fcf97">✓ Paid</span>{% else %}<span style="color:var(--ca)">⏳ Payment Pending</span>{% endif %}
+        <span>{{ order.city }}, {{ order.country }}</span>
+      </div>
+
+      {% if not order.is_paid and order.payment_method == 'bank' %}
+      <div style="background:rgba(201,168,76,.06);border:1px solid rgba(201,168,76,.2);padding:1rem;margin-top:1rem;font-size:.82rem">
+        <strong>Bank Transfer Pending</strong> — Transfer ${{ order.total }} using reference <strong>{{ order.order_number }}</strong>
+      </div>
+      {% endif %}
+    </div>
+    {% endfor %}
+
+    {% else %}
+    <div style="text-align:center;padding:5rem 2rem;color:var(--ctm)">
+      <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="margin-bottom:1.5rem;opacity:.3"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+      <h2 style="font-family:var(--fd);margin-bottom:.75rem">No orders yet</h2>
+      <p style="margin-bottom:2rem">Your order history will appear here after your first purchase.</p>
+      <a href="/" class="btn btn-primary btn-lg">Explore the Collection</a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

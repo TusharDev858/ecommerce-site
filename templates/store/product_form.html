@@ -1,0 +1,237 @@
+{% extends "store/base.html" %}
+{% block title %}{{ action }} — {{ site.SITE_NAME }}{% endblock %}
+{% block extra_styles %}
+<style>
+  .pf-page{padding:3rem 0 5rem}
+  .pf-layout{display:grid;grid-template-columns:1.3fr 1fr;gap:2rem;align-items:start}
+  .pf-card{background:var(--cs);border:1px solid var(--cb);padding:2rem;margin-bottom:1.5rem}
+  .pf-card h3{font-size:.7rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--ctm);margin-bottom:1.5rem;padding-bottom:.75rem;border-bottom:1px solid var(--cb)}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+  select.form-control{appearance:auto}
+  .img-formset-item{background:var(--cp);border:1px solid var(--cb);padding:1rem;margin-bottom:.75rem}
+  .img-formset-item:last-child{margin-bottom:0}
+  .existing-img{display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem}
+  .existing-img img{width:56px;height:56px;object-fit:cover;border:1px solid var(--cb)}
+  .del-check{display:flex;align-items:center;gap:.4rem;font-size:.75rem;color:#e05;margin-top:.4rem}
+  .section-divider{font-size:.65rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--ca);margin:1.5rem 0 1rem;padding-top:1rem;border-top:1px solid var(--cb)}
+  .flag-row{display:flex;flex-wrap:wrap;gap:1.5rem;margin-top:.5rem}
+  .flag-row label{display:flex;align-items:center;gap:.5rem;font-size:.85rem;cursor:pointer}
+  .flag-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--ca);cursor:pointer}
+  @media(max-width:900px){.pf-layout{grid-template-columns:1fr}.form-row{grid-template-columns:1fr}}
+</style>
+{% endblock %}
+{% block content %}
+<div class="pf-page">
+  <div class="container">
+    <div style="display:flex;align-items:center;gap:1rem;margin-bottom:2.5rem">
+      <a href="{% url 'dashboard' %}" class="btn btn-ghost btn-sm">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+        Dashboard
+      </a>
+      <div>
+        <div class="section-label">Products</div>
+        <h1 style="font-size:1.8rem">{{ action }}</h1>
+      </div>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="pf-layout">
+
+        <!-- Left: Product Details -->
+        <div>
+          <div class="pf-card">
+            <h3>Basic Information</h3>
+
+            <div class="form-group">
+              <label class="form-label">Product Name *</label>
+              <input type="text" name="name" class="form-control"
+                     value="{{ form.name.value|default:'' }}" required
+                     placeholder="e.g. Solitaire Diamond Ring">
+              {% if form.name.errors %}<div class="form-error">{{ form.name.errors.as_text }}</div>{% endif %}
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Category</label>
+                {{ form.category }}
+              </div>
+              <div class="form-group">
+                <label class="form-label">SKU</label>
+                <input type="text" name="sku" class="form-control"
+                       value="{{ form.sku.value|default:'' }}" placeholder="e.g. RNG-001">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Tagline</label>
+              <input type="text" name="tagline" class="form-control"
+                     value="{{ form.tagline.value|default:'' }}"
+                     placeholder="Short description shown on product cards">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Full Description *</label>
+              <textarea name="description" class="form-control" rows="7" required>{{ form.description.value|default:'' }}</textarea>
+              {% if form.description.errors %}<div class="form-error">{{ form.description.errors.as_text }}</div>{% endif %}
+            </div>
+
+            <div class="section-divider">Pricing & Inventory</div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Price ($) *</label>
+                <input type="number" name="price" class="form-control"
+                       value="{{ form.price.value|default:'' }}"
+                       step="0.01" min="0" required placeholder="0.00">
+                {% if form.price.errors %}<div class="form-error">{{ form.price.errors.as_text }}</div>{% endif %}
+              </div>
+              <div class="form-group">
+                <label class="form-label">Compare Price ($)</label>
+                <input type="number" name="compare_price" class="form-control"
+                       value="{{ form.compare_price.value|default:'' }}"
+                       step="0.01" min="0" placeholder="Original / was price">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Stock Quantity *</label>
+              <input type="number" name="stock" class="form-control"
+                     value="{{ form.stock.value|default:'0' }}" min="0" required>
+            </div>
+
+            <div class="section-divider">Jewelry Specifications</div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Metal</label>
+                {{ form.metal }}
+              </div>
+              <div class="form-group">
+                <label class="form-label">Stone</label>
+                {{ form.stone }}
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Stone Carat</label>
+                <input type="text" name="stone_carat" class="form-control"
+                       value="{{ form.stone_carat.value|default:'' }}" placeholder="e.g. 0.5ct">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Weight (grams)</label>
+                <input type="number" name="weight_grams" class="form-control"
+                       value="{{ form.weight_grams.value|default:'' }}"
+                       step="0.01" placeholder="e.g. 4.5">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Dimensions</label>
+              <input type="text" name="dimensions" class="form-control"
+                     value="{{ form.dimensions.value|default:'' }}"
+                     placeholder="e.g. 18mm diameter, 45cm chain">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Sizes Available</label>
+              <input type="text" name="sizes_available" class="form-control"
+                     value="{{ form.sizes_available.value|default:'' }}"
+                     placeholder="e.g. 5,6,7,8,9 or XS,S,M,L">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Hallmark</label>
+              <input type="text" name="hallmark" class="form-control"
+                     value="{{ form.hallmark.value|default:'' }}"
+                     placeholder="e.g. 925, 750, Pt950">
+            </div>
+
+            <div class="section-divider">Visibility & Flags</div>
+
+            <!-- FIX: Use Django form widgets directly — reliable checked state -->
+            <div class="flag-row">
+              <label>{{ form.is_featured }} Feature in Hero</label>
+              <label>{{ form.is_new_arrival }} New Arrival</label>
+              <label>{{ form.is_customizable }} Customizable</label>
+              <label>{{ form.is_active }} Active (visible on store)</label>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Right: Images + Save Button -->
+        <div>
+          <div class="pf-card">
+            <h3>Product Images (up to 10)</h3>
+            {{ formset.management_form }}
+            {% for img_form in formset %}
+            <div class="img-formset-item">
+              {% if img_form.instance.pk %}
+              <div class="existing-img">
+                <img src="{{ img_form.instance.image.url }}" alt="Current image">
+                <div>
+                  <div style="font-size:.78rem;font-weight:600">Current image</div>
+                  <div style="font-size:.72rem;color:var(--ctm)">Upload new to replace</div>
+                </div>
+              </div>
+              {% endif %}
+              {{ img_form.id }}
+              <div class="form-group">
+                <label class="form-label">Image</label>
+                {{ img_form.image }}
+              </div>
+              <div class="form-group">
+                <label class="form-label">Alt Text</label>
+                <input type="text" name="{{ img_form.alt_text.html_name }}"
+                       class="form-control"
+                       value="{{ img_form.alt_text.value|default:'' }}"
+                       placeholder="Describe the image">
+              </div>
+              <div style="display:flex;gap:1.5rem;align-items:center">
+                <label style="display:flex;align-items:center;gap:.4rem;font-size:.78rem">
+                  <input type="checkbox" name="{{ img_form.is_primary.html_name }}"
+                         {% if img_form.is_primary.value %}checked{% endif %}>
+                  Primary image
+                </label>
+                {% if img_form.instance.pk %}
+                <label class="del-check">
+                  <input type="checkbox" name="{{ img_form.DELETE.html_name }}"> Delete
+                </label>
+                {% endif %}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-lg"
+                  style="width:100%;justify-content:center;margin-bottom:.75rem">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+              <polyline points="17 21 17 13 7 13 7 21"/>
+              <polyline points="7 3 7 8 15 8"/>
+            </svg>
+            Save Product
+          </button>
+
+          {% if product %}
+          <a href="{% url 'product_detail' product.slug %}"
+             class="btn btn-outline btn-lg"
+             style="width:100%;justify-content:center;margin-bottom:.75rem">
+            View on Store
+          </a>
+          {% endif %}
+
+          <a href="{% url 'dashboard' %}"
+             class="btn btn-ghost btn-lg"
+             style="width:100%;justify-content:center">
+            Cancel
+          </a>
+        </div>
+
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,105 @@
+{% extends "store/base.html" %}
+{% block title %}My Bag — {{ site.SITE_NAME }}{% endblock %}
+{% block extra_styles %}
+<style>
+  .cart-page{padding:3rem 0 5rem}
+  .cart-layout{display:grid;grid-template-columns:1fr 360px;gap:3rem;align-items:start}
+  .cart-item{display:grid;grid-template-columns:100px 1fr auto;gap:1.5rem;align-items:start;padding:1.5rem 0;border-bottom:1px solid var(--cb)}
+  .cart-item-img{aspect-ratio:1;background:var(--cs);overflow:hidden}
+  .cart-item-img img{width:100%;height:100%;object-fit:cover}
+  .item-name{font-family:var(--fd);font-size:1.1rem;margin-bottom:.25rem}
+  .item-meta{font-size:.78rem;color:var(--ctm);margin-bottom:.75rem}
+  .qty-row{display:flex;align-items:center;gap:.5rem}
+  .qty-btn{width:28px;height:28px;border:1px solid var(--cb);background:transparent;color:var(--ct);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all var(--tr)}
+  .qty-btn:hover{border-color:var(--ca);color:var(--ca)}
+  .qty-val{min-width:24px;text-align:center;font-size:.9rem;font-weight:600}
+  .order-summary{background:var(--cs);border:1px solid var(--cb);padding:2rem;position:sticky;top:90px}
+  .summary-row{display:flex;justify-content:space-between;align-items:center;padding:.6rem 0;font-size:.9rem}
+  .summary-row.total{font-family:var(--fd);font-size:1.3rem;font-weight:600;padding-top:1rem;border-top:1px solid var(--cb);margin-top:.5rem}
+  .free-ship-note{background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.25);padding:.75rem 1rem;font-size:.8rem;color:var(--ca);margin:1rem 0;text-align:center}
+  @media(max-width:768px){.cart-layout{grid-template-columns:1fr}.cart-item{grid-template-columns:80px 1fr auto}}
+</style>
+{% endblock %}
+{% block content %}
+<div class="cart-page">
+  <div class="container">
+    <div style="margin-bottom:2.5rem">
+      <div class="section-label">Your Shopping</div>
+      <h1>My Bag</h1>
+    </div>
+
+    {% if items %}
+    <div class="cart-layout">
+      <div>
+        {% for item in items %}
+        <div class="cart-item">
+          <div class="cart-item-img">
+            {% if item.product.primary_image %}<img src="{{ item.product.primary_image.image.url }}" alt="{{ item.product.name }}">
+            {% else %}<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--ctm)">✦</div>{% endif %}
+          </div>
+          <div>
+            <div class="item-name"><a href="{% url 'product_detail' item.product.slug %}">{{ item.product.name }}</a></div>
+            <div class="item-meta">
+              {% if item.product.metal %}{{ item.product.get_metal_display_label }}{% if item.product.stone %} · {{ item.product.get_stone_display_label }}{% endif %}<br>{% endif %}
+              {% if item.size %}Size: {{ item.size }}<br>{% endif %}
+              ${{ item.product.price }} each
+            </div>
+            <form action="{% url 'cart_update' item.pk %}" method="POST" style="display:inline-flex;align-items:center;gap:.5rem">
+              {% csrf_token %}
+              <div class="qty-row">
+                <button type="submit" name="quantity" value="{{ item.quantity|add:'-1' }}" class="qty-btn">−</button>
+                <span class="qty-val">{{ item.quantity }}</span>
+                <button type="submit" name="quantity" value="{{ item.quantity|add:'1' }}" class="qty-btn">+</button>
+              </div>
+            </form>
+          </div>
+          <div style="text-align:right">
+            <div style="font-family:var(--fd);font-size:1.1rem;font-weight:600;color:var(--ca);margin-bottom:.75rem">${{ item.line_total }}</div>
+            <form action="{% url 'cart_remove' item.pk %}" method="POST">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-ghost btn-sm" style="color:var(--ctm);font-size:.72rem">Remove</button>
+            </form>
+          </div>
+        </div>
+        {% endfor %}
+        <div style="padding-top:1.5rem">
+          <a href="/" class="btn btn-ghost btn-sm">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+            Continue Shopping
+          </a>
+        </div>
+      </div>
+
+      <div class="order-summary">
+        <h3 style="margin-bottom:1.5rem;font-family:var(--fd)">Order Summary</h3>
+        <div class="summary-row"><span>Subtotal</span><span>${{ subtotal }}</span></div>
+        <div class="summary-row">
+          <span>Shipping</span>
+          <span>{% if shipping == 0 %}<span style="color:#6fcf97">Free</span>{% else %}${{ shipping }}{% endif %}</span>
+        </div>
+        {% if shipping > 0 %}
+        <div class="free-ship-note">Add ${{ payment.FREE_SHIPPING_ABOVE|floatformat:0 }} for free shipping</div>
+        {% else %}
+        <div class="free-ship-note" style="color:#6fcf97;border-color:rgba(111,207,151,.25);background:rgba(111,207,151,.08)">✓ You qualify for free shipping!</div>
+        {% endif %}
+        <div class="summary-row total"><span>Total</span><span style="color:var(--ca)">${{ total }}</span></div>
+        <a href="{% url 'checkout' %}" class="btn btn-primary" style="width:100%;margin-top:1.5rem;justify-content:center">Proceed to Checkout</a>
+        <div style="display:flex;justify-content:center;gap:1rem;margin-top:1rem;flex-wrap:wrap">
+          {% if payment.STRIPE_ENABLED %}<span style="font-size:.68rem;color:var(--ctm)">💳 Card</span>{% endif %}
+          {% if payment.PAYPAL_ENABLED %}<span style="font-size:.68rem;color:var(--ctm)">🅿 PayPal</span>{% endif %}
+          {% if payment.COD_ENABLED %}<span style="font-size:.68rem;color:var(--ctm)">💵 COD</span>{% endif %}
+        </div>
+      </div>
+    </div>
+
+    {% else %}
+    <div style="text-align:center;padding:6rem 2rem;color:var(--ctm)">
+      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="margin-bottom:1.5rem;opacity:.3"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+      <h2 style="font-family:var(--fd);margin-bottom:.75rem">Your bag is empty</h2>
+      <p style="margin-bottom:2rem">Discover our curated collection of fine jewelry.</p>
+      <a href="/" class="btn btn-primary btn-lg">Explore the Collection</a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

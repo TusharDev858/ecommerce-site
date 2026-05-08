@@ -1,0 +1,351 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}{{ site.SITE_NAME }}{% endblock %}</title>
+  <meta name="description" content="{{ site.SITE_DESCRIPTION }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --cp:   {{ site.COLOR_PRIMARY }};
+      --cs:   {{ site.COLOR_SECONDARY }};
+      --ca:   {{ site.COLOR_ACCENT }};
+      --cah:  {{ site.COLOR_ACCENT_HOVER }};
+      --ct:   {{ site.COLOR_TEXT }};
+      --ctm:  {{ site.COLOR_TEXT_MUTED }};
+      --cb:   {{ site.COLOR_BORDER }};
+      --fd:   {{ site.FONT_DISPLAY }};
+      --fb:   {{ site.FONT_BODY }};
+      --r:    4px;
+      --rl:   12px;
+      --tr:   0.22s cubic-bezier(.4,0,.2,1);
+      --sh:   0 8px 40px rgba(0,0,0,.5);
+      --sh-sm:0 2px 12px rgba(0,0,0,.3);
+    }
+    [data-theme="light"] {
+      --cp: {{ site.COLOR_PRIMARY_LIGHT }};
+      --cs: {{ site.COLOR_SECONDARY_LIGHT }};
+      --ct: {{ site.COLOR_TEXT_LIGHT }};
+      --ctm:{{ site.COLOR_TEXT_MUTED_LIGHT }};
+      --cb: {{ site.COLOR_BORDER_LIGHT }};
+      --sh: 0 8px 40px rgba(0,0,0,.1);
+      --sh-sm: 0 2px 12px rgba(0,0,0,.06);
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{background:var(--cp);color:var(--ct);font-family:var(--fb);font-size:16px;line-height:1.6;transition:background var(--tr),color var(--tr);min-height:100vh}
+    h1,h2,h3,h4{font-family:var(--fd);line-height:1.2}
+    h1{font-size:clamp(2.2rem,5vw,4rem);font-weight:600}
+    h2{font-size:clamp(1.6rem,3vw,2.4rem);font-weight:600}
+    h3{font-size:1.3rem;font-weight:600}
+    a{color:inherit;text-decoration:none}
+    img{max-width:100%;display:block}
+
+    /* Announcement bar */
+    .announce-bar{background:var(--ca);color:#000;text-align:center;padding:.45rem 1rem;font-size:.75rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase}
+
+    /* Navbar */
+    .navbar{position:sticky;top:0;z-index:100;background:var(--cp);border-bottom:1px solid var(--cb);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);transition:background var(--tr)}
+    .nav-inner{max-width:1320px;margin:0 auto;padding:0 1.5rem;height:68px;display:flex;align-items:center;gap:1.5rem}
+    .nav-brand{font-family:var(--fd);font-size:1.5rem;font-weight:600;letter-spacing:.04em;color:var(--ct);flex-shrink:0;font-style:italic}
+    .nav-brand span{color:var(--ca)}
+    .nav-links{display:flex;align-items:center;gap:.1rem;flex:1;justify-content:center}
+    .nav-link{padding:.4rem .9rem;font-size:.8rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--ctm);transition:color var(--tr);border-radius:var(--r)}
+    .nav-link:hover{color:var(--ct)}
+    .nav-link.active{color:var(--ca)}
+    .nav-actions{display:flex;align-items:center;gap:.5rem;margin-left:auto}
+    .nav-btn{width:38px;height:38px;border-radius:50%;border:1px solid var(--cb);background:transparent;color:var(--ctm);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all var(--tr);position:relative;flex-shrink:0}
+    .nav-btn:hover{border-color:var(--ca);color:var(--ca)}
+    .cart-badge{position:absolute;top:-4px;right:-4px;background:var(--ca);color:#000;font-size:.6rem;font-weight:800;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+    .hamburger{display:none;background:none;border:none;cursor:pointer;color:var(--ct);padding:.25rem}
+    .mobile-menu{display:none;position:fixed;inset:68px 0 0;background:var(--cp);z-index:99;padding:2rem 1.5rem;flex-direction:column;gap:.25rem;border-top:1px solid var(--cb);overflow-y:auto}
+    .mobile-menu.open{display:flex}
+    .mobile-menu .nav-link{font-size:1rem;padding:.8rem 1rem;border-bottom:1px solid var(--cb)}
+
+    /* Layout */
+    .container{max-width:1320px;margin:0 auto;padding:0 1.5rem}
+    .section{padding:5rem 0}
+    .section-sm{padding:3rem 0}
+    .section-label{font-size:.7rem;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--ca);margin-bottom:.75rem}
+    .divider{width:48px;height:1px;background:var(--ca);margin:1.25rem 0}
+
+    /* Buttons */
+    .btn{display:inline-flex;align-items:center;gap:.5rem;padding:.7rem 1.6rem;border-radius:0;font-family:var(--fb);font-size:.78rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border:1px solid transparent;transition:all var(--tr);text-decoration:none;white-space:nowrap}
+    .btn-primary{background:var(--ca);color:#000;border-color:var(--ca)}
+    .btn-primary:hover{background:var(--cah);border-color:var(--cah);transform:translateY(-1px);box-shadow:0 6px 20px rgba(201,168,76,.35)}
+    .btn-outline{background:transparent;color:var(--ct);border-color:var(--cb)}
+    .btn-outline:hover{border-color:var(--ct)}
+    .btn-ghost{background:transparent;color:var(--ctm);border-color:transparent}
+    .btn-ghost:hover{color:var(--ct)}
+    .btn-sm{padding:.4rem 1rem;font-size:.72rem}
+    .btn-lg{padding:.9rem 2.2rem;font-size:.82rem}
+    .btn-danger{background:#8b0000;color:#fff;border-color:#8b0000}
+    .btn-danger:hover{background:#a00}
+
+    /* Cards */
+    .card{background:var(--cs);border:1px solid var(--cb);overflow:hidden;transition:transform var(--tr),box-shadow var(--tr),border-color var(--tr)}
+    .card:hover{transform:translateY(-3px);box-shadow:var(--sh);border-color:rgba(201,168,76,.4)}
+
+    /* Forms */
+    .form-group{margin-bottom:1.25rem}
+    .form-label{display:block;font-size:.72rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ctm);margin-bottom:.4rem}
+    .form-control{width:100%;padding:.65rem 1rem;background:var(--cs);color:var(--ct);border:1px solid var(--cb);border-radius:0;font-family:var(--fb);font-size:.9rem;transition:border-color var(--tr),box-shadow var(--tr);outline:none}
+    .form-control:focus{border-color:var(--ca);box-shadow:0 0 0 3px rgba(201,168,76,.12)}
+    textarea.form-control{resize:vertical;min-height:110px}
+    select.form-control{appearance:auto}
+    .form-error{font-size:.78rem;color:#e05;margin-top:.3rem}
+    .form-check{display:flex;align-items:center;gap:.5rem;font-size:.85rem}
+    .form-check input{width:auto;accent-color:var(--ca)}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+
+    /* Alerts */
+    .messages-list{position:fixed;top:76px;right:1rem;z-index:300;display:flex;flex-direction:column;gap:.5rem;max-width:380px;width:calc(100% - 2rem)}
+    .alert{padding:.85rem 1.1rem;font-size:.85rem;font-weight:500;display:flex;align-items:center;justify-content:space-between;gap:1rem;animation:slideIn .3s ease;box-shadow:var(--sh-sm);border-left:3px solid}
+    .alert-success{background:#0d2018;color:#6fcf97;border-color:#6fcf97}
+    .alert-error,.alert-danger{background:#200d0d;color:#f06;border-color:#f06}
+    .alert-info{background:#0d1525;color:#7ec8e3;border-color:#7ec8e3}
+    .alert-warning{background:#201a0d;color:var(--ca);border-color:var(--ca)}
+    .alert-close{background:none;border:none;cursor:pointer;color:inherit;opacity:.6;font-size:1rem;padding:0;flex-shrink:0}
+    @keyframes slideIn{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:translateX(0)}}
+
+    /* Product grid */
+    .product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1.5rem}
+    .product-card{position:relative;cursor:pointer}
+    .product-card-img{aspect-ratio:3/4;overflow:hidden;background:var(--cs)}
+    .product-card-img img{width:100%;height:100%;object-fit:cover;transition:transform .5s ease}
+    .product-card:hover .product-card-img img{transform:scale(1.06)}
+    .product-card-body{padding:1rem 0 .75rem}
+    .product-badge{position:absolute;top:.75rem;left:.75rem;font-size:.65rem;font-weight:700;letter-spacing:.08em;padding:.2rem .6rem;text-transform:uppercase}
+    .badge-sale{background:var(--ca);color:#000}
+    .badge-new{background:var(--ct);color:var(--cp)}
+    .product-meta{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ca);margin-bottom:.25rem}
+    .product-name{font-family:var(--fd);font-size:1.1rem;font-weight:500;margin-bottom:.4rem}
+    .product-price{display:flex;align-items:baseline;gap:.5rem}
+    .price-current{font-size:1rem;font-weight:500;color:var(--ca)}
+    .price-compare{font-size:.85rem;color:var(--ctm);text-decoration:line-through}
+    .product-card-hover{position:absolute;bottom:0;left:0;right:0;padding:.75rem;background:rgba(12,11,9,.85);backdrop-filter:blur(4px);display:flex;gap:.5rem;transform:translateY(100%);transition:transform var(--tr)}
+    .product-card:hover .product-card-hover{transform:translateY(0)}
+
+    /* Footer */
+    .footer{border-top:1px solid var(--cb);padding:5rem 0 2.5rem;margin-top:5rem}
+    .footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:3rem;margin-bottom:4rem}
+    .footer-brand{font-family:var(--fd);font-size:1.8rem;font-weight:600;font-style:italic;margin-bottom:.75rem}
+    .footer-brand span{color:var(--ca)}
+    .footer-desc{color:var(--ctm);font-size:.85rem;line-height:1.8;margin-bottom:1.5rem}
+    .footer-heading{font-size:.68rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--ctm);margin-bottom:1.25rem}
+    .footer-links{list-style:none;display:flex;flex-direction:column;gap:.6rem}
+    .footer-links a{font-size:.85rem;color:var(--ctm);transition:color var(--tr)}
+    .footer-links a:hover{color:var(--ca)}
+    .footer-social{display:flex;gap:.6rem;margin-top:1rem}
+    .social-link{width:34px;height:34px;border:1px solid var(--cb);display:flex;align-items:center;justify-content:center;color:var(--ctm);font-size:.72rem;font-weight:700;transition:all var(--tr)}
+    .social-link:hover{border-color:var(--ca);color:var(--ca)}
+    .footer-bottom{border-top:1px solid var(--cb);padding-top:2rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem}
+    .footer-copy{font-size:.75rem;color:var(--ctm)}
+    .trust-badges{display:flex;gap:2rem;flex-wrap:wrap}
+    .trust-badge{display:flex;align-items:center;gap:.5rem;font-size:.72rem;color:var(--ctm)}
+    .trust-badge svg{color:var(--ca);flex-shrink:0}
+
+    @media(max-width:900px){.footer-grid{grid-template-columns:1fr 1fr;gap:2rem}}
+    @media(max-width:768px){
+      .nav-links,.nav-actions .nav-btn:not(.cart-nav-btn):not(.theme-toggle){display:none}
+      .hamburger{display:flex}
+      .footer-grid{grid-template-columns:1fr}
+      .section{padding:3rem 0}
+      .form-row{grid-template-columns:1fr}
+    }
+  </style>
+  {% block extra_styles %}{% endblock %}
+</head>
+<body>
+
+<!-- Announcement Bar -->
+<div class="announce-bar">✦ Free shipping on orders over ${{ payment.FREE_SHIPPING_ABOVE }} &nbsp;·&nbsp; 30-day returns &nbsp;·&nbsp; Lifetime resize</div>
+
+{% if messages %}
+<div class="messages-list">
+  {% for msg in messages %}
+  <div class="alert alert-{{ msg.tags }}">
+    <span>{{ msg }}</span>
+    <button class="alert-close" onclick="this.closest('.alert').remove()">&#x2715;</button>
+  </div>
+  {% endfor %}
+</div>
+<script>setTimeout(()=>document.querySelectorAll('.alert').forEach(a=>a.remove()),6000)</script>
+{% endif %}
+
+<nav class="navbar">
+  <div class="nav-inner">
+    <a href="/" class="nav-brand">
+      {% if site.LOGO_URL %}
+        <img src="{% static site.LOGO_URL %}" alt="{{ site.SITE_NAME }}" style="width:{{ site.LOGO_WIDTH }};height:auto">
+      {% else %}
+        <em>{{ site.SITE_NAME }}</em>
+      {% endif %}
+    </a>
+
+    <div class="nav-links">
+      <a href="/" class="nav-link">Collections</a>
+      <a href="/?category=rings" class="nav-link">Rings</a>
+      <a href="/?category=necklaces" class="nav-link">Necklaces</a>
+      <a href="/?category=earrings" class="nav-link">Earrings</a>
+      <a href="/?category=bracelets" class="nav-link">Bracelets</a>
+      <a href="/#contact" class="nav-link">Contact</a>
+    </div>
+
+    <div class="nav-actions">
+      <!-- Search -->
+      <button class="nav-btn" id="searchToggle" aria-label="Search">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      </button>
+
+      <!-- Theme toggle -->
+      <button class="nav-btn theme-toggle" id="themeToggle" aria-label="Toggle theme">
+        <svg id="iconDark" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        <svg id="iconLight" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>
+      </button>
+
+      {% if user.is_authenticated %}
+        {% if user.is_superuser %}<a href="{% url 'dashboard' %}" class="nav-btn" title="Dashboard" aria-label="Dashboard"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></a>{% endif %}
+        <a href="{% url 'logout' %}" class="nav-btn" title="Logout" aria-label="Logout"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></a>
+      {% else %}
+        <a href="{% url 'login' %}" class="nav-btn" title="Login" aria-label="Login"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></a>
+      {% endif %}
+
+      <!-- Cart -->
+      <a href="{% url 'cart' %}" class="nav-btn cart-nav-btn" aria-label="Cart">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        {% if cart_count > 0 %}<span class="cart-badge">{{ cart_count }}</span>{% endif %}
+      </a>
+
+      <button class="hamburger" id="hamburger" aria-label="Menu">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Search bar (hidden by default) -->
+  <div id="searchBar" style="display:none;padding:.75rem 1.5rem;border-top:1px solid var(--cb);background:var(--cp)">
+    <form action="/" method="GET" style="max-width:600px;margin:0 auto;display:flex;gap:.5rem">
+      <input type="text" name="q" class="form-control" placeholder="Search rings, necklaces, gold, diamond..." value="{{ request.GET.q|default:'' }}" autofocus style="flex:1">
+      <button type="submit" class="btn btn-primary btn-sm">Search</button>
+    </form>
+  </div>
+</nav>
+
+<div class="mobile-menu" id="mobileMenu">
+  <a href="/" class="nav-link">All Collections</a>
+  <a href="/?category=rings" class="nav-link">Rings</a>
+  <a href="/?category=necklaces" class="nav-link">Necklaces</a>
+  <a href="/?category=earrings" class="nav-link">Earrings</a>
+  <a href="/?category=bracelets" class="nav-link">Bracelets</a>
+  <a href="/#contact" class="nav-link">Contact</a>
+  <div style="border-top:1px solid var(--cb);margin-top:.5rem;padding-top:.5rem">
+    {% if user.is_authenticated %}
+      {% if user.is_superuser %}<a href="{% url 'dashboard' %}" class="nav-link">Dashboard</a>{% endif %}
+      <a href="{% url 'order_history' %}" class="nav-link">My Orders</a>
+      <a href="{% url 'logout' %}" class="nav-link">Logout</a>
+    {% else %}
+      <a href="{% url 'login' %}" class="nav-link">Login</a>
+      <a href="{% url 'register' %}" class="nav-link">Create Account</a>
+    {% endif %}
+    <a href="{% url 'cart' %}" class="nav-link">My Bag {% if cart_count > 0 %}({{ cart_count }}){% endif %}</a>
+  </div>
+</div>
+
+{% block content %}{% endblock %}
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-brand"><em>{{ site.SITE_NAME }}</em></div>
+        <p class="footer-desc">{{ site.SITE_DESCRIPTION }}</p>
+        <div class="footer-social">
+          {% if site.SOCIAL_INSTAGRAM %}<a href="{{ site.SOCIAL_INSTAGRAM }}" class="social-link" target="_blank" rel="noopener" aria-label="Instagram">IG</a>{% endif %}
+          {% if site.SOCIAL_PINTEREST %}<a href="{{ site.SOCIAL_PINTEREST }}" class="social-link" target="_blank" rel="noopener" aria-label="Pinterest">PI</a>{% endif %}
+          {% if site.SOCIAL_TWITTER %}<a href="{{ site.SOCIAL_TWITTER }}" class="social-link" target="_blank" rel="noopener" aria-label="Twitter">TW</a>{% endif %}
+          {% if site.SOCIAL_FACEBOOK %}<a href="{{ site.SOCIAL_FACEBOOK }}" class="social-link" target="_blank" rel="noopener" aria-label="Facebook">FB</a>{% endif %}
+        </div>
+      </div>
+      <div>
+        <div class="footer-heading">Collections</div>
+        <ul class="footer-links">
+          <li><a href="/?category=rings">Rings</a></li>
+          <li><a href="/?category=necklaces">Necklaces</a></li>
+          <li><a href="/?category=earrings">Earrings</a></li>
+          <li><a href="/?category=bracelets">Bracelets</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-heading">Help</div>
+        <ul class="footer-links">
+          <li><a href="/#contact">Contact Us</a></li>
+          <li><a href="{% url 'order_history' %}">Track Order</a></li>
+          <li><a href="/#contact">Returns & Sizing</a></li>
+          <li><a href="/#contact">Care Guide</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-heading">Contact</div>
+        <ul class="footer-links">
+          {% if site.CONTACT_EMAIL %}<li><a href="mailto:{{ site.CONTACT_EMAIL }}">{{ site.CONTACT_EMAIL }}</a></li>{% endif %}
+          {% if site.CONTACT_PHONE %}<li>{{ site.CONTACT_PHONE }}</li>{% endif %}
+          {% if site.CONTACT_ADDRESS %}<li style="color:var(--ctm)">{{ site.CONTACT_ADDRESS }}</li>{% endif %}
+        </ul>
+      </div>
+    </div>
+
+    <!-- Trust Badges -->
+    <div class="trust-badges" style="margin-bottom:2rem;padding-bottom:2rem;border-bottom:1px solid var(--cb)">
+      <div class="trust-badge">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Secure Checkout
+      </div>
+      <div class="trust-badge">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        Free Returns
+      </div>
+      <div class="trust-badge">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Lifetime Resize
+      </div>
+      <div class="trust-badge">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        Ethically Sourced
+      </div>
+      <div class="trust-badge">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        Stripe · PayPal · COD
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <span class="footer-copy">{{ site.FOOTER_TAGLINE }}</span>
+      <span class="footer-copy">Crafted with care</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Theme
+  const html=document.documentElement,themeBtn=document.getElementById('themeToggle'),iD=document.getElementById('iconDark'),iL=document.getElementById('iconLight');
+  let theme=localStorage.getItem('theme')||'dark';
+  function applyTheme(t){html.setAttribute('data-theme',t);iD.style.display=t==='dark'?'block':'none';iL.style.display=t==='light'?'block':'none';localStorage.setItem('theme',t)}
+  applyTheme(theme);
+  themeBtn.addEventListener('click',()=>{theme=theme==='dark'?'light':'dark';applyTheme(theme)});
+
+  // Mobile menu
+  const ham=document.getElementById('hamburger'),mob=document.getElementById('mobileMenu');
+  ham.addEventListener('click',()=>mob.classList.toggle('open'));
+  document.addEventListener('click',e=>{if(!ham.contains(e.target)&&!mob.contains(e.target))mob.classList.remove('open')});
+
+  // Search toggle
+  const sBtn=document.getElementById('searchToggle'),sBar=document.getElementById('searchBar');
+  sBtn.addEventListener('click',()=>{const v=sBar.style.display==='none';sBar.style.display=v?'block':'none';if(v)sBar.querySelector('input').focus()});
+</script>
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

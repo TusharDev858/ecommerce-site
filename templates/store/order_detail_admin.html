@@ -1,0 +1,106 @@
+{% extends "store/base.html" %}
+{% block title %}Order {{ order.order_number }} — {{ site.SITE_NAME }}{% endblock %}
+{% block extra_styles %}
+<style>
+  .order-admin{padding:3rem 0 5rem}
+  .order-layout{display:grid;grid-template-columns:1fr 320px;gap:2rem;align-items:start}
+  .info-card{background:var(--cs);border:1px solid var(--cb);padding:1.75rem;margin-bottom:1.25rem}
+  .info-card h3{font-family:var(--fd);font-size:1.1rem;margin-bottom:1.25rem;padding-bottom:.75rem;border-bottom:1px solid var(--cb)}
+  .info-row{display:flex;justify-content:space-between;padding:.5rem 0;font-size:.875rem;border-bottom:1px solid var(--cb)}
+  .info-row:last-child{border-bottom:none}
+  .info-label{color:var(--ctm)}
+  .status-select{padding:.5rem 1rem;background:var(--cp);border:1px solid var(--cb);color:var(--ct);font-family:var(--fb);font-size:.85rem;width:100%;margin-bottom:.75rem;outline:none}
+  .status-select:focus{border-color:var(--ca)}
+  .item-row{display:flex;gap:1rem;align-items:center;padding:.75rem 0;border-bottom:1px solid var(--cb)}
+  .item-row:last-child{border-bottom:none}
+  .item-img{width:52px;height:52px;object-fit:cover;border:1px solid var(--cb)}
+  .item-img-ph{width:52px;height:52px;background:var(--cp);border:1px solid var(--cb);display:flex;align-items:center;justify-content:center;color:var(--ctm)}
+  @media(max-width:768px){.order-layout{grid-template-columns:1fr}}
+</style>
+{% endblock %}
+{% block content %}
+<div class="order-admin">
+  <div class="container">
+    <div style="display:flex;align-items:center;gap:1rem;margin-bottom:2rem">
+      <a href="{% url 'dashboard' %}" class="btn btn-ghost btn-sm"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg> Dashboard</a>
+      <div>
+        <div class="section-label">Order Management</div>
+        <h1 style="font-size:1.8rem">{{ order.order_number }}</h1>
+      </div>
+    </div>
+
+    <div class="order-layout">
+      <div>
+        <!-- Items -->
+        <div class="info-card">
+          <h3>Items Ordered</h3>
+          {% for item in order.items.all %}
+          <div class="item-row">
+            {% if item.product and item.product.primary_image %}
+            <img class="item-img" src="{{ item.product.primary_image.image.url }}" alt="{{ item.product_name }}">
+            {% else %}<div class="item-img-ph">✦</div>{% endif %}
+            <div style="flex:1">
+              <div style="font-weight:600">{{ item.product_name }}</div>
+              {% if item.size %}<div style="font-size:.75rem;color:var(--ctm)">Size: {{ item.size }}</div>{% endif %}
+              <div style="font-size:.75rem;color:var(--ctm)">Qty: {{ item.quantity }} × ${{ item.unit_price }}</div>
+            </div>
+            <div style="font-weight:700;color:var(--ca)">${{ item.line_total }}</div>
+          </div>
+          {% endfor %}
+          <div style="display:flex;justify-content:space-between;padding:.75rem 0;font-size:.875rem">
+            <span style="color:var(--ctm)">Subtotal</span><span>${{ order.subtotal }}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:.75rem 0;font-size:.875rem">
+            <span style="color:var(--ctm)">Shipping</span><span>{% if order.shipping_cost == 0 %}Free{% else %}${{ order.shipping_cost }}{% endif %}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:.75rem 0;font-family:var(--fd);font-size:1.2rem;font-weight:600;border-top:1px solid var(--cb)">
+            <span>Total</span><span style="color:var(--ca)">${{ order.total }}</span>
+          </div>
+        </div>
+
+        <!-- Customer -->
+        <div class="info-card">
+          <h3>Customer Details</h3>
+          <div class="info-row"><span class="info-label">Name</span><span>{{ order.full_name }}</span></div>
+          <div class="info-row"><span class="info-label">Email</span><a href="mailto:{{ order.email }}" style="color:var(--ca)">{{ order.email }}</a></div>
+          {% if order.phone %}<div class="info-row"><span class="info-label">Phone</span><span>{{ order.phone }}</span></div>{% endif %}
+          <div class="info-row"><span class="info-label">Address</span><span>{{ order.address_line1 }}{% if order.address_line2 %}, {{ order.address_line2 }}{% endif %}</span></div>
+          <div class="info-row"><span class="info-label">City</span><span>{{ order.city }}{% if order.state %}, {{ order.state }}{% endif %} {{ order.postal_code }}</span></div>
+          <div class="info-row"><span class="info-label">Country</span><span>{{ order.country }}</span></div>
+          {% if order.gift_note %}<div class="info-row"><span class="info-label">Gift Note</span><span style="font-style:italic;color:var(--ctm)">"{{ order.gift_note }}"</span></div>{% endif %}
+        </div>
+
+        <!-- Payment -->
+        <div class="info-card">
+          <h3>Payment</h3>
+          <div class="info-row"><span class="info-label">Method</span><span>{{ order.get_payment_method_display }}</span></div>
+          <div class="info-row"><span class="info-label">Status</span><span {% if order.is_paid %}style="color:#6fcf97"{% else %}style="color:var(--ca)"{% endif %}>{% if order.is_paid %}✓ Paid{% else %}⏳ Pending{% endif %}</span></div>
+          {% if order.payment_id %}<div class="info-row"><span class="info-label">Transaction ID</span><span style="font-size:.75rem;word-break:break-all">{{ order.payment_id }}</span></div>{% endif %}
+          <div class="info-row"><span class="info-label">Placed</span><span>{{ order.created_at|date:"M d, Y H:i" }}</span></div>
+        </div>
+      </div>
+
+      <!-- Status panel -->
+      <div>
+        <div class="info-card" style="position:sticky;top:90px">
+          <h3>Update Status</h3>
+          <p style="font-size:.82rem;color:var(--ctm);margin-bottom:1rem">Current: <strong style="color:var(--ca)">{{ order.get_status_display }}</strong></p>
+          <form method="POST">
+            {% csrf_token %}
+            <select name="status" class="status-select">
+              {% for val, label in order.STATUS_CHOICES %}
+              <option value="{{ val }}" {% if order.status == val %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-primary" style="width:100%">Update Status</button>
+          </form>
+          <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid var(--cb)">
+            <a href="mailto:{{ order.email }}?subject=Your Order {{ order.order_number }}" class="btn btn-outline btn-sm" style="width:100%;justify-content:center;margin-bottom:.5rem">Email Customer</a>
+            <a href="{% url 'dashboard' %}" class="btn btn-ghost btn-sm" style="width:100%;justify-content:center">Back to Dashboard</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

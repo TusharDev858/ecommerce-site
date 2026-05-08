@@ -1,0 +1,46 @@
+{% extends "store/base.html" %}
+{% block title %}Create Account — {{ site.SITE_NAME }}{% endblock %}
+{% block extra_styles %}
+<style>
+  .auth-page{min-height:calc(100vh - 110px);display:flex;align-items:center;justify-content:center;padding:3rem 1.5rem}
+  .auth-box{width:100%;max-width:500px}
+  .auth-logo{text-align:center;margin-bottom:2.5rem}
+  .auth-logo-text{font-family:var(--fd);font-size:2.2rem;font-weight:600;font-style:italic}
+  .auth-logo-sub{color:var(--ctm);font-size:.85rem;margin-top:.25rem;letter-spacing:.06em}
+  .auth-card{background:var(--cs);border:1px solid var(--cb);padding:2.5rem}
+  .auth-card h2{margin-bottom:.4rem;font-size:1.6rem}
+  .auth-card>p{color:var(--ctm);font-size:.875rem;margin-bottom:2rem}
+  .auth-footer{text-align:center;margin-top:1.25rem;font-size:.85rem;color:var(--ctm)}
+  .auth-footer a{color:var(--ca)}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+  .help-text{font-size:.72rem;color:var(--ctm);margin-top:.25rem}
+  @media(max-width:480px){.form-row{grid-template-columns:1fr}}
+</style>
+{% endblock %}
+{% block content %}
+<div class="auth-page">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <div class="auth-logo-text"><em>{{ site.SITE_NAME }}</em></div>
+      <div class="auth-logo-sub">Create your account</div>
+    </div>
+    <div class="auth-card">
+      <h2>Join {{ site.SITE_NAME }}</h2>
+      <p>Create a free account to track orders and save favourites.</p>
+      <form method="POST">
+        {% csrf_token %}
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">First Name</label><input type="text" name="first_name" class="form-control" placeholder="First" value="{{ form.first_name.value|default:'' }}"></div>
+          <div class="form-group"><label class="form-label">Last Name</label><input type="text" name="last_name" class="form-control" placeholder="Last" value="{{ form.last_name.value|default:'' }}"></div>
+        </div>
+        <div class="form-group"><label class="form-label">Username *</label><input type="text" name="username" class="form-control" placeholder="Choose a username" value="{{ form.username.value|default:'' }}" required autofocus>{% if form.username.errors %}<div class="form-error">{{ form.username.errors.as_text }}</div>{% endif %}</div>
+        <div class="form-group"><label class="form-label">Email *</label><input type="email" name="email" class="form-control" placeholder="your@email.com" value="{{ form.email.value|default:'' }}" required>{% if form.email.errors %}<div class="form-error">{{ form.email.errors.as_text }}</div>{% endif %}</div>
+        <div class="form-group"><label class="form-label">Password *</label><input type="password" name="password1" class="form-control" placeholder="Min. 8 characters" required>{% if form.password1.errors %}<div class="form-error">{{ form.password1.errors.as_text }}</div>{% endif %}<div class="help-text">At least 8 characters, not entirely numeric.</div></div>
+        <div class="form-group"><label class="form-label">Confirm Password *</label><input type="password" name="password2" class="form-control" placeholder="Repeat your password" required>{% if form.password2.errors %}<div class="form-error">{{ form.password2.errors.as_text }}</div>{% endif %}</div>
+        <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:.5rem">Create Account</button>
+      </form>
+    </div>
+    <div class="auth-footer">Already have an account? <a href="{% url 'login' %}">Sign in</a></div>
+  </div>
+</div>
+{% endblock %}

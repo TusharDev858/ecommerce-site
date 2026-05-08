@@ -1,0 +1,175 @@
+{% extends "store/base.html" %}
+{% block title %}Dashboard — {{ site.SITE_NAME }}{% endblock %}
+{% block extra_styles %}
+<style>
+  .dash{padding:3rem 0 5rem}
+  .dash-header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:2.5rem;flex-wrap:wrap;gap:1rem}
+  .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1rem;margin-bottom:3rem}
+  .stat-card{background:var(--cs);border:1px solid var(--cb);padding:1.5rem}
+  .stat-val{font-family:var(--fd);font-size:2.4rem;font-weight:600;color:var(--ca);line-height:1}
+  .stat-lbl{font-size:.7rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ctm);margin-top:.4rem}
+  .dash-section{margin-bottom:3rem}
+  .dash-section-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem}
+  .dash-section-hdr h3{font-family:var(--fd);font-size:1.3rem}
+  .table-wrap{background:var(--cs);border:1px solid var(--cb);overflow:hidden}
+  table{width:100%;border-collapse:collapse}
+  th{padding:.75rem 1.25rem;text-align:left;font-size:.65rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--ctm);border-bottom:1px solid var(--cb);white-space:nowrap}
+  td{padding:.9rem 1.25rem;font-size:.85rem;border-bottom:1px solid var(--cb);vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:rgba(255,255,255,.015)}
+  .pill{display:inline-block;padding:.2rem .65rem;font-size:.65rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+  .pill-active{background:rgba(111,207,151,.15);color:#6fcf97}
+  .pill-inactive{background:rgba(204,0,85,.12);color:#e05}
+  .pill-featured{background:rgba(201,168,76,.15);color:var(--ca)}
+  .pill-pending{background:rgba(201,168,76,.12);color:var(--ca)}
+  .pill-confirmed{background:rgba(111,207,151,.12);color:#6fcf97}
+  .pill-shipped{background:rgba(86,182,247,.12);color:#56b6f7}
+  .pill-delivered{background:rgba(111,207,151,.2);color:#4caf50}
+  .pill-cancelled{background:rgba(204,0,85,.1);color:#e05}
+  .thumb{width:42px;height:42px;object-fit:cover;border:1px solid var(--cb)}
+  .thumb-ph{width:42px;height:42px;background:var(--cp);border:1px solid var(--cb);display:flex;align-items:center;justify-content:center;color:var(--ctm);font-size:.7rem}
+  .action-btns{display:flex;gap:.3rem;flex-wrap:wrap}
+  @media(max-width:768px){.table-wrap{overflow-x:auto}table{min-width:600px}}
+</style>
+{% endblock %}
+{% block content %}
+<div class="dash">
+  <div class="container">
+    <div class="dash-header">
+      <div>
+        <div class="section-label">Admin</div>
+        <h1>Dashboard</h1>
+      </div>
+      <a href="{% url 'product_add' %}" class="btn btn-primary">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add Product
+      </a>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-val">{{ total_products }}</div><div class="stat-lbl">Total Products</div></div>
+      <div class="stat-card"><div class="stat-val">{{ active_products }}</div><div class="stat-lbl">Active Listings</div></div>
+      <div class="stat-card"><div class="stat-val">{{ total_orders }}</div><div class="stat-lbl">Total Orders</div></div>
+      <div class="stat-card"><div class="stat-val" style="color:var(--ca)">{{ pending_orders }}</div><div class="stat-lbl">Pending Orders</div></div>
+      <div class="stat-card"><div class="stat-val" {% if unread_messages.count > 0 %}style="color:#e05"{% endif %}>{{ unread_messages.count }}</div><div class="stat-lbl">Unread Messages</div></div>
+    </div>
+
+    <!-- Products -->
+    <div class="dash-section">
+      <div class="dash-section-hdr">
+        <h3>Products</h3>
+        <a href="{% url 'product_add' %}" class="btn btn-outline btn-sm">+ Add New</a>
+      </div>
+      <div class="table-wrap">
+        {% if products %}
+        <table>
+          <thead><tr>
+            <th>Product</th><th>Metal / Stone</th><th>Price</th><th>Stock</th><th>Status</th><th>Actions</th>
+          </tr></thead>
+          <tbody>
+            {% for p in products %}
+            <tr>
+              <td>
+                <div style="display:flex;align-items:center;gap:.75rem">
+                  {% if p.primary_image %}<img class="thumb" src="{{ p.primary_image.image.url }}" alt="{{ p.name }}">
+                  {% else %}<div class="thumb-ph">✦</div>{% endif %}
+                  <div>
+                    <div style="font-weight:600">{{ p.name }}</div>
+                    <div style="font-size:.72rem;color:var(--ctm)">{{ p.category|default:"—" }}</div>
+                  </div>
+                </div>
+              </td>
+              <td style="font-size:.78rem;color:var(--ctm)">
+                {% if p.metal %}{{ p.get_metal_display_label }}{% endif %}
+                {% if p.stone %}<br>{{ p.get_stone_display_label }}{% endif %}
+                {% if not p.metal and not p.stone %}—{% endif %}
+              </td>
+              <td style="font-weight:600;color:var(--ca)">${{ p.price }}</td>
+              <td>
+                <span {% if p.stock == 0 %}style="color:#e05"{% elif p.stock < 5 %}style="color:var(--ca)"{% endif %}>{{ p.stock }}</span>
+              </td>
+              <td>
+                <span class="pill {% if p.is_active %}pill-active{% else %}pill-inactive{% endif %}">{% if p.is_active %}Active{% else %}Hidden{% endif %}</span>
+                {% if p.is_featured %}<span class="pill pill-featured" style="margin-left:.25rem">Featured</span>{% endif %}
+              </td>
+              <td>
+                <div class="action-btns">
+                  <a href="{% url 'product_detail' p.slug %}" class="btn btn-outline btn-sm">View</a>
+                  <a href="{% url 'product_edit' p.pk %}" class="btn btn-outline btn-sm">Edit</a>
+                  <a href="{% url 'product_toggle' p.pk %}" class="btn btn-sm {% if p.is_active %}btn-ghost{% else %}btn-primary{% endif %}" onclick="return confirm('Toggle visibility?')">{% if p.is_active %}Hide{% else %}Show{% endif %}</a>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div style="padding:3rem;text-align:center;color:var(--ctm)">No products yet. <a href="{% url 'product_add' %}" style="color:var(--ca)">Add your first piece</a>.</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Recent Orders -->
+    <div class="dash-section">
+      <div class="dash-section-hdr">
+        <h3>Recent Orders</h3>
+        <a href="/admin/store/order/" class="btn btn-outline btn-sm">View All in Admin</a>
+      </div>
+      <div class="table-wrap">
+        {% if recent_orders %}
+        <table>
+          <thead><tr><th>Order</th><th>Customer</th><th>Payment</th><th>Total</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
+          <tbody>
+            {% for o in recent_orders %}
+            <tr>
+              <td style="font-weight:700;color:var(--ca)">{{ o.order_number }}</td>
+              <td>
+                <div style="font-weight:600">{{ o.full_name }}</div>
+                <div style="font-size:.75rem;color:var(--ctm)">{{ o.email }}</div>
+              </td>
+              <td style="font-size:.78rem">
+                {{ o.get_payment_method_display }}
+                {% if o.is_paid %}<span style="color:#6fcf97;display:block;font-size:.7rem">✓ Paid</span>
+                {% else %}<span style="color:var(--ca);display:block;font-size:.7rem">⏳ Pending</span>{% endif %}
+              </td>
+              <td style="font-weight:600">${{ o.total }}</td>
+              <td><span class="pill pill-{{ o.status }}">{{ o.get_status_display }}</span></td>
+              <td style="font-size:.78rem;color:var(--ctm)">{{ o.created_at|date:"M d, Y" }}</td>
+              <td><a href="{% url 'order_detail_admin' o.pk %}" class="btn btn-outline btn-sm">Manage</a></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div style="padding:3rem;text-align:center;color:var(--ctm)">No orders yet.</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Unread Messages -->
+    {% if unread_messages %}
+    <div class="dash-section">
+      <div class="dash-section-hdr">
+        <h3>Unread Messages <span style="color:#e05;font-size:.85rem">({{ unread_messages.count }})</span></h3>
+        <a href="{% url 'messages' %}" class="btn btn-outline btn-sm">View All</a>
+      </div>
+      {% for msg in unread_messages|slice:":3" %}
+      <div style="background:var(--cs);border:1px solid var(--cb);padding:1.25rem;margin-bottom:.75rem">
+        <div style="display:flex;justify-content:space-between;margin-bottom:.5rem;flex-wrap:wrap;gap:.5rem">
+          <div>
+            <strong>{{ msg.name }}</strong>
+            <span style="color:var(--ctm);margin-left:.5rem;font-size:.82rem">{{ msg.email }}</span>
+          </div>
+          <span style="font-size:.72rem;color:var(--ctm)">{{ msg.submitted_at|timesince }} ago</span>
+        </div>
+        <div style="color:var(--ca);font-size:.85rem;margin-bottom:.35rem">{{ msg.subject }}</div>
+        <div style="color:var(--ctm);font-size:.83rem">{{ msg.message|truncatewords:25 }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

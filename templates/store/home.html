@@ -1,0 +1,266 @@
+{% extends "store/base.html" %}
+{% load static %}
+{% block title %}{{ site.SITE_NAME }} — {{ site.SITE_TAGLINE }}{% endblock %}
+{% block extra_styles %}
+<style>
+  /* Hero */
+  .hero{display:grid;grid-template-columns:1fr 1fr;min-height:88vh;max-width:1320px;margin:0 auto;padding:4rem 1.5rem}
+  .hero-content{display:flex;flex-direction:column;justify-content:center;padding-right:4rem}
+  .hero-eyebrow{font-size:.7rem;font-weight:600;letter-spacing:.25em;text-transform:uppercase;color:var(--ca);margin-bottom:1.5rem;display:flex;align-items:center;gap:.75rem}
+  .hero-eyebrow::before{content:'';width:32px;height:1px;background:var(--ca)}
+  .hero-title{margin-bottom:1rem;line-height:1.1}
+  .hero-title em{font-style:italic;color:var(--ca)}
+  .hero-desc{color:var(--ctm);font-size:1rem;line-height:1.9;margin-bottom:2.5rem;max-width:460px}
+  .hero-price-row{display:flex;align-items:center;gap:1.25rem;margin-bottom:2.5rem}
+  .hero-price{font-family:var(--fd);font-size:2.2rem;font-weight:600;color:var(--ca)}
+  .hero-price-compare{font-size:1.1rem;color:var(--ctm);text-decoration:line-through}
+  .hero-discount{background:var(--ca);color:#000;font-size:.65rem;font-weight:800;padding:.25rem .65rem;letter-spacing:.06em;text-transform:uppercase}
+  .hero-actions{display:flex;gap:1rem;flex-wrap:wrap}
+  .hero-img{position:relative;overflow:hidden;background:var(--cs)}
+  .hero-img img{width:100%;height:100%;object-fit:cover}
+  .hero-img-placeholder{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;color:var(--ctm);min-height:500px}
+  .hero-specs{display:flex;gap:2rem;margin-top:2.5rem;padding-top:2rem;border-top:1px solid var(--cb)}
+  .hero-spec{font-size:.75rem}
+  .hero-spec-label{color:var(--ctm);letter-spacing:.08em;text-transform:uppercase;font-size:.65rem;margin-bottom:.2rem}
+  .hero-spec-value{font-weight:600;color:var(--ct)}
+
+  /* New Arrivals */
+  .section-header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:2.5rem;gap:1rem}
+
+  /* Filter */
+  .filter-row{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:1px solid var(--cb)}
+  .filter-pill{padding:.3rem .9rem;font-size:.72rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--cb);color:var(--ctm);transition:all var(--tr);cursor:pointer;text-decoration:none;background:transparent}
+  .filter-pill:hover{border-color:var(--ca);color:var(--ca)}
+  .filter-pill.active{background:var(--ca);border-color:var(--ca);color:#000}
+  .sort-select{padding:.3rem .75rem;background:var(--cs);border:1px solid var(--cb);color:var(--ct);font-family:var(--fb);font-size:.78rem;cursor:pointer;margin-left:auto;outline:none}
+  .sort-select:focus{border-color:var(--ca)}
+
+  /* Product card */
+  .product-card-img{aspect-ratio:3/4}
+  .no-img-box{width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--ctm);background:var(--cs)}
+
+  /* Contact */
+  .contact-section{background:var(--cs);border-top:1px solid var(--cb);padding:6rem 0}
+  .contact-grid{display:grid;grid-template-columns:1fr 1.4fr;gap:6rem;align-items:start}
+  .contact-form-box{background:var(--cp);border:1px solid var(--cb);padding:2.5rem}
+  .contact-item{display:flex;gap:1rem;margin-bottom:1.5rem}
+  .contact-icon{width:40px;height:40px;border:1px solid var(--cb);display:flex;align-items:center;justify-content:center;color:var(--ca);flex-shrink:0}
+
+  /* Payment bar in contact */
+  .pay-methods{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid var(--cb)}
+  .pay-chip{padding:.25rem .8rem;border:1px solid var(--cb);font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ctm)}
+  .pay-chip.enabled{border-color:rgba(201,168,76,.4);color:var(--ca)}
+
+  @media(max-width:900px){
+    .hero{grid-template-columns:1fr;min-height:auto;padding:3rem 1.5rem;gap:2rem}
+    .hero-content{padding-right:0}
+    .hero-img{max-height:420px}
+    .contact-grid{grid-template-columns:1fr;gap:3rem}
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ══ FEATURED HERO ══════════════════════════════════════════════ -->
+{% if featured %}
+<section>
+  <div class="hero">
+    <div class="hero-content">
+      <div class="hero-eyebrow">Featured Piece</div>
+      <h1 class="hero-title">{{ featured.name }}</h1>
+      <p class="hero-desc">{{ featured.description|truncatewords:45 }}</p>
+
+      <div class="hero-price-row">
+        <span class="hero-price">${{ featured.price }}</span>
+        {% if featured.compare_price %}<span class="hero-price-compare">${{ featured.compare_price }}</span>{% endif %}
+        {% if featured.discount_percent %}<span class="hero-discount">Save {{ featured.discount_percent }}%</span>{% endif %}
+      </div>
+
+      <div class="hero-actions">
+        <a href="{% url 'product_detail' featured.slug %}" class="btn btn-primary btn-lg">View Details</a>
+        <form action="{% url 'cart_add' featured.pk %}" method="POST" style="display:inline">
+          {% csrf_token %}
+          <input type="hidden" name="quantity" value="1">
+          <button type="submit" class="btn btn-outline btn-lg" {% if not featured.in_stock %}disabled{% endif %}>
+            {% if featured.in_stock %}Add to Bag{% else %}Out of Stock{% endif %}
+          </button>
+        </form>
+      </div>
+
+      {% if featured.metal or featured.stone or featured.weight_grams %}
+      <div class="hero-specs">
+        {% if featured.metal %}<div class="hero-spec"><div class="hero-spec-label">Metal</div><div class="hero-spec-value">{{ featured.get_metal_display_label }}</div></div>{% endif %}
+        {% if featured.stone %}<div class="hero-spec"><div class="hero-spec-label">Stone</div><div class="hero-spec-value">{{ featured.get_stone_display_label }}</div></div>{% endif %}
+        {% if featured.weight_grams %}<div class="hero-spec"><div class="hero-spec-label">Weight</div><div class="hero-spec-value">{{ featured.weight_grams }}g</div></div>{% endif %}
+        {% if featured.hallmark %}<div class="hero-spec"><div class="hero-spec-label">Hallmark</div><div class="hero-spec-value">{{ featured.hallmark }}</div></div>{% endif %}
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="hero-img">
+      {% if featured.primary_image %}
+        <img src="{{ featured.primary_image.image.url }}" alt="{{ featured.name }}">
+      {% else %}
+        <div class="hero-img-placeholder">
+          <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" opacity=".3"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          <span style="font-family:var(--fd);font-style:italic;font-size:1.1rem">{{ featured.name }}</span>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- ══ NEW ARRIVALS ═══════════════════════════════════════════════ -->
+{% if new_arrivals %}
+<section class="section-sm" style="border-top:1px solid var(--cb)">
+  <div class="container">
+    <div class="section-header">
+      <div>
+        <div class="section-label">Just In</div>
+        <h2>New Arrivals</h2>
+      </div>
+      <a href="/?sort=newest" class="btn btn-ghost btn-sm">View All
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+      </a>
+    </div>
+    <div class="product-grid">
+      {% for p in new_arrivals %}
+      <div class="card product-card">
+        <span class="product-badge badge-new">New</span>
+        <a href="{% url 'product_detail' p.slug %}">
+          <div class="product-card-img">
+            {% if p.primary_image %}<img src="{{ p.primary_image.image.url }}" alt="{{ p.name }}" loading="lazy">
+            {% else %}<div class="no-img-box"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".3"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>{% endif %}
+          </div>
+          <div class="product-card-body">
+            {% if p.metal %}<div class="product-meta">{{ p.get_metal_display_label }}</div>{% endif %}
+            <div class="product-name">{{ p.name }}</div>
+            <div class="product-price"><span class="price-current">${{ p.price }}</span>{% if p.compare_price %}<span class="price-compare">${{ p.compare_price }}</span>{% endif %}</div>
+          </div>
+        </a>
+        <div class="product-card-hover">
+          <form action="{% url 'cart_add' p.pk %}" method="POST" style="flex:1">{% csrf_token %}<input type="hidden" name="quantity" value="1"><button type="submit" class="btn btn-primary btn-sm" style="width:100%" {% if not p.in_stock %}disabled{% endif %}>{% if p.in_stock %}Add to Bag{% else %}Sold Out{% endif %}</button></form>
+          <a href="{% url 'product_detail' p.slug %}" class="btn btn-outline btn-sm">View</a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- ══ FULL COLLECTION ════════════════════════════════════════════ -->
+<section class="section" id="shop">
+  <div class="container">
+    <div class="section-header">
+      <div>
+        <div class="section-label">{% if search_query %}Search Results{% else %}The Collection{% endif %}</div>
+        <h2>{% if active_category %}{{ active_category|title }}{% elif search_query %}"{{ search_query }}"{% else %}All Pieces{% endif %}</h2>
+        <div style="color:var(--ctm);font-size:.8rem;margin-top:.3rem">{{ products.count }} piece{{ products.count|pluralize }}</div>
+      </div>
+      {% if search_query %}<a href="/" class="btn btn-outline btn-sm">Clear Search</a>{% endif %}
+    </div>
+
+    <div class="filter-row">
+      <a href="/" class="filter-pill {% if not active_category %}active{% endif %}">All</a>
+      {% for cat in categories %}
+      <a href="/?category={{ cat.slug }}{% if active_sort %}&sort={{ active_sort }}{% endif %}" class="filter-pill {% if active_category == cat.slug %}active{% endif %}">{{ cat.name }}</a>
+      {% endfor %}
+      <select class="sort-select" onchange="window.location='/?{% if active_category %}category={{ active_category }}&{% endif %}sort='+this.value">
+        <option value="newest" {% if active_sort == 'newest' or not active_sort %}selected{% endif %}>Newest</option>
+        <option value="price_asc" {% if active_sort == 'price_asc' %}selected{% endif %}>Price: Low to High</option>
+        <option value="price_desc" {% if active_sort == 'price_desc' %}selected{% endif %}>Price: High to Low</option>
+        <option value="name" {% if active_sort == 'name' %}selected{% endif %}>Name A–Z</option>
+      </select>
+    </div>
+
+    {% if products %}
+    <div class="product-grid">
+      {% for p in products %}
+      <div class="card product-card">
+        {% if p.discount_percent %}<span class="product-badge badge-sale">-{{ p.discount_percent }}%</span>{% endif %}
+        {% if p.is_new_arrival and not p.discount_percent %}<span class="product-badge badge-new">New</span>{% endif %}
+        <a href="{% url 'product_detail' p.slug %}">
+          <div class="product-card-img">
+            {% if p.primary_image %}<img src="{{ p.primary_image.image.url }}" alt="{{ p.name }}" loading="lazy">
+            {% else %}<div class="no-img-box"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".3"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>{% endif %}
+          </div>
+          <div class="product-card-body">
+            {% if p.metal %}<div class="product-meta">{{ p.get_metal_display_label }}{% if p.stone %} · {{ p.get_stone_display_label }}{% endif %}</div>{% endif %}
+            <div class="product-name">{{ p.name }}</div>
+            {% if p.tagline %}<div style="font-size:.82rem;color:var(--ctm);margin-bottom:.4rem">{{ p.tagline }}</div>{% endif %}
+            <div class="product-price">
+              <span class="price-current">${{ p.price }}</span>
+              {% if p.compare_price %}<span class="price-compare">${{ p.compare_price }}</span>{% endif %}
+            </div>
+          </div>
+        </a>
+        <div class="product-card-hover">
+          <form action="{% url 'cart_add' p.pk %}" method="POST" style="flex:1">{% csrf_token %}<input type="hidden" name="quantity" value="1"><button type="submit" class="btn btn-primary btn-sm" style="width:100%" {% if not p.in_stock %}disabled{% endif %}>{% if p.in_stock %}Add to Bag{% else %}Sold Out{% endif %}</button></form>
+          {% if user.is_superuser %}<a href="{% url 'product_edit' p.pk %}" class="btn btn-outline btn-sm">Edit</a>{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:5rem 2rem;color:var(--ctm)">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" style="margin-bottom:1rem;opacity:.3"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      <h3 style="margin-bottom:.5rem;color:var(--ct)">No pieces found</h3>
+      <p>{% if search_query %}Try a different search.{% else %}This collection is coming soon.{% endif %}</p>
+      {% if search_query or active_category %}<a href="/" class="btn btn-outline" style="margin-top:1.5rem">View All</a>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+<!-- ══ CONTACT SECTION ════════════════════════════════════════════ -->
+<section class="contact-section" id="contact">
+  <div class="container">
+    <div class="contact-grid">
+      <div>
+        <div class="section-label">Get in Touch</div>
+        <h2>We'd love to hear from you</h2>
+        <div class="divider"></div>
+        <p style="color:var(--ctm);line-height:1.9;margin-bottom:2.5rem">Questions about a piece, custom orders, sizing advice, or gift suggestions — our team is here to help you find the perfect jewel.</p>
+        {% if site.CONTACT_EMAIL %}
+        <div class="contact-item">
+          <div class="contact-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
+          <div><div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:var(--ctm);margin-bottom:.2rem">Email</div><a href="mailto:{{ site.CONTACT_EMAIL }}" style="color:var(--ca)">{{ site.CONTACT_EMAIL }}</a></div>
+        </div>{% endif %}
+        {% if site.CONTACT_PHONE %}
+        <div class="contact-item">
+          <div class="contact-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.54 2 2 0 0 1 3.59 1.36h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.91a16 16 0 0 0 6.09 6.09l1.13-1.13a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
+          <div><div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:var(--ctm);margin-bottom:.2rem">Phone</div>{{ site.CONTACT_PHONE }}</div>
+        </div>{% endif %}
+
+        <div style="margin-top:2rem">
+          <div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:var(--ctm);margin-bottom:.75rem">We Accept</div>
+          <div class="pay-methods">
+            {% if payment.STRIPE_ENABLED %}<span class="pay-chip enabled">💳 Card</span>{% endif %}
+            {% if payment.PAYPAL_ENABLED %}<span class="pay-chip enabled">PayPal</span>{% endif %}
+            {% if payment.COD_ENABLED %}<span class="pay-chip enabled">Cash on Delivery</span>{% endif %}
+            {% if payment.BANK_ENABLED %}<span class="pay-chip enabled">Bank Transfer</span>{% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="contact-form-box">
+        <h3 style="margin-bottom:1.5rem;font-family:var(--fd)">Send a Message</h3>
+        <form method="POST" action="/#contact">
+          {% csrf_token %}
+          <input type="hidden" name="contact_submit" value="1">
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Name</label><input type="text" name="name" class="form-control" placeholder="Your name" value="{{ contact_form.name.value|default:'' }}" required></div>
+            <div class="form-group"><label class="form-label">Email</label><input type="email" name="email" class="form-control" placeholder="your@email.com" value="{{ contact_form.email.value|default:'' }}" required></div>
+          </div>
+          <div class="form-group"><label class="form-label">Subject</label><input type="text" name="subject" class="form-control" placeholder="e.g. Custom engraving, sizing question..." value="{{ contact_form.subject.value|default:'' }}" required></div>
+          <div class="form-group"><label class="form-label">Message</label><textarea name="message" class="form-control" rows="5" placeholder="Tell us what you're looking for..." required>{{ contact_form.message.value|default:'' }}</textarea></div>
+          <button type="submit" class="btn btn-primary" style="width:100%">Send Message</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
